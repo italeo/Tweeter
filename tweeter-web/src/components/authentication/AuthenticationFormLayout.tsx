@@ -34,12 +34,10 @@ const AuthenticationFormLayout = (props: Props) => {
               height="72"
             />
             <h1 className="h3 mb-3 fw-normal">{props.headingText}</h1>
-
             {props.inputFieldGenerator()}
-
             <h1 className="h4 mb-3 fw-normal">Or</h1>
             <h1 className="h5 mb-3 fw-normal">{props.oAuthHeading}</h1>
-
+            // Buttons start here for link displays
             <div className="text-center mb-3">
               <button
                 type="button"
@@ -126,7 +124,7 @@ const AuthenticationFormLayout = (props: Props) => {
                 </OverlayTrigger>
               </button>
             </div>
-
+            // Buttons end here
             <div className="checkbox mb-3">
               <label>
                 <input
@@ -139,9 +137,7 @@ const AuthenticationFormLayout = (props: Props) => {
                 Remember me
               </label>
             </div>
-
             {props.switchAuthenticationMethodGenerator()}
-
             <button
               id="submitButton"
               className="w-100 btn btn-lg btn-primary"
