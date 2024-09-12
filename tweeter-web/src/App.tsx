@@ -1,6 +1,5 @@
 import "./App.css";
-import { useContext } from "react";
-import { UserInfoContext } from "./components/userInfo/UserInfoProvider";
+
 import {
   BrowserRouter,
   Navigate,
@@ -15,9 +14,10 @@ import Toaster from "./components/toaster/Toaster";
 import { AuthToken, User, FakeData, Status } from "tweeter-shared";
 import UserItemScroller from "./components/mainLayout/UserItemScroller";
 import StatusItemScroller from "./components/mainLayout/StatusItemScroller";
+import useUserInfoHook from "./components/userInfo/userInfoHook";
 
 const App = () => {
-  const { currentUser, authToken } = useContext(UserInfoContext);
+  const { currentUser, authToken } = useUserInfoHook();
 
   const isAuthenticated = (): boolean => {
     return !!currentUser && !!authToken;

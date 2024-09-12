@@ -1,10 +1,9 @@
-import { useContext } from "react";
-import { UserInfoContext } from "../userInfo/UserInfoProvider";
 import { AuthToken, User } from "tweeter-shared";
 import { useState, useEffect } from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
 import UserItem from "../userItem/UserItem";
 import useToastListener from "../toaster/ToastListenerHook";
+import useUserInfoHook from "../userInfo/userInfoHook";
 
 export const PAGE_SIZE = 10;
 
@@ -26,10 +25,9 @@ const UserItemScroller = (props: Props) => {
   const [lastItem, setLastItem] = useState<User | null>(null);
   const [changedDisplayedUser, setChangedDisplayedUser] = useState(true);
 
-  const addItems = (newItems: User[]) =>
-    setNewItems(newItems);
+  const addItems = (newItems: User[]) => setNewItems(newItems);
 
-  const { displayedUser, authToken } = useContext(UserInfoContext);
+  const { displayedUser, authToken } = useUserInfoHook();
 
   // Initialize the component whenever the displayed user changes
   useEffect(() => {
@@ -38,17 +36,17 @@ const UserItemScroller = (props: Props) => {
 
   // Load initial items whenever the displayed user changes. Done in a separate useEffect hook so the changes from reset will be visible.
   useEffect(() => {
-    if(changedDisplayedUser) {
+    if (changedDisplayedUser) {
       loadMoreItems();
     }
   }, [changedDisplayedUser]);
 
   // Add new items whenever there are new items to add
   useEffect(() => {
-    if(newItems) {
+    if (newItems) {
       setItems([...items, ...newItems]);
     }
-  }, [newItems])
+  }, [newItems]);
 
   const reset = async () => {
     setItems([]);
@@ -56,7 +54,7 @@ const UserItemScroller = (props: Props) => {
     setLastItem(null);
     setHasMoreItems(true);
     setChangedDisplayedUser(true);
-  }
+  };
 
   const loadMoreItems = async () => {
     try {
@@ -70,7 +68,7 @@ const UserItemScroller = (props: Props) => {
       setHasMoreItems(hasMore);
       setLastItem(newItems[newItems.length - 1]);
       addItems(newItems);
-      setChangedDisplayedUser(false)
+      setChangedDisplayedUser(false);
     } catch (error) {
       displayErrorMessage(
         `Failed to load ${props.itemDescription} because of exception: ${error}`

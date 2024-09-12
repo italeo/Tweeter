@@ -1,10 +1,9 @@
 import "./UserInfo.css";
-import { useContext } from "react";
-import { UserInfoContext } from "../userInfo/UserInfoProvider";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { AuthToken, FakeData, User } from "tweeter-shared";
 import useToastListener from "../toaster/ToastListenerHook";
+import useUserInfoHook from "./userInfoHook";
 
 const UserInfo = () => {
   const [isFollower, setIsFollower] = useState(false);
@@ -16,7 +15,7 @@ const UserInfo = () => {
     useToastListener();
 
   const { currentUser, authToken, displayedUser, setDisplayedUser } =
-    useContext(UserInfoContext);
+    useUserInfoHook();
 
   if (!displayedUser) {
     setDisplayedUser(currentUser!);
@@ -153,10 +152,7 @@ const UserInfo = () => {
 
     try {
       setIsLoading(true);
-      displayInfoMessage(
-        `Unfollowing ${displayedUser!.name}...`,
-        0
-      );
+      displayInfoMessage(`Unfollowing ${displayedUser!.name}...`, 0);
 
       const [followerCount, followeeCount] = await unfollow(
         authToken!,
