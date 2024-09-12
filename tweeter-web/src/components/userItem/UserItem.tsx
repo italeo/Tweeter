@@ -1,51 +1,53 @@
-import { AuthToken, FakeData, User } from "tweeter-shared";
+import { User } from "tweeter-shared";
 import { Link } from "react-router-dom";
 import useToastListener from "../toaster/ToastListenerHook";
-import useUserInfoHook from "../userInfo/userInfoHook";
 import { UserInfoContext } from "../userInfo/UserInfoProvider";
 import { useContext } from "react";
+import useUserNavigation from "../userInfo/userNavigationHook";
 
 interface Props {
   value: User;
 }
 
 const UserItem = (props: Props) => {
-  const { displayErrorMessage } = useToastListener();
-  const { setDisplayedUser, currentUser, authToken } =
-    useContext(UserInfoContext);
+  // const { displayErrorMessage } = useToastListener();
+  // const { setDisplayedUser, currentUser, authToken } =
+  //   useContext(UserInfoContext);
 
-  const navigateToUser = async (event: React.MouseEvent): Promise<void> => {
-    event.preventDefault();
+  const { navigateToUser } = useUserNavigation();
 
-    try {
-      const alias = extractAlias(event.target.toString());
+  // async (event: React.MouseEvent): Promise<void> => {
+  //   event.preventDefault();
 
-      const user = await getUser(authToken!, alias);
+  //   try {
+  //     const alias = extractAlias(event.target.toString());
 
-      if (!!user) {
-        if (currentUser!.equals(user)) {
-          setDisplayedUser(currentUser!);
-        } else {
-          setDisplayedUser(user);
-        }
-      }
-    } catch (error) {
-      displayErrorMessage(`Failed to get user because of exception: ${error}`);
-    }
-  };
+  //     const user = await getUser(authToken!, alias);
 
-  const extractAlias = (value: string): string => {
-    const index = value.indexOf("@");
-    return value.substring(index);
-  };
+  //     if (!!user) {
+  //       if (currentUser!.equals(user)) {
+  //         setDisplayedUser(currentUser!);
+  //       } else {
+  //         setDisplayedUser(user);
+  //       }
+  //     }
+  //   } catch (error) {
+  //     displayErrorMessage(`Failed to get user because of exception: ${error}`);
+  //   }
+  // };
 
-  const getUser = async (
-    authToken: AuthToken,
-    alias: string
-  ): Promise<User | null> => {
-    // TODO: Replace with the result of calling server
-    return FakeData.instance.findUserByAlias(alias);
-  };
+  // const extractAlias = (value: string): string => {
+  //   const index = value.indexOf("@");
+  //   return value.substring(index);
+  // };
+
+  // const getUser = async (
+  //   authToken: AuthToken,
+  //   alias: string
+  // ): Promise<User | null> => {
+  //   // TODO: Replace with the result of calling server
+  //   return FakeData.instance.findUserByAlias(alias);
+  // };
 
   return (
     <div className="col bg-light mx-0 px-0">
