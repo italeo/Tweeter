@@ -5,10 +5,7 @@ interface Props {
   onPasswordChange: (event: ChangeEvent<HTMLInputElement>) => void;
 }
 
-const AuthenticationFields: React.FC<Props> = ({
-  onAliasChange,
-  onPasswordChange,
-}) => {
+const AuthenticationFields: React.FC<Props> = (props: Props) => {
   return (
     <>
       <div className="form-floating">
@@ -19,7 +16,7 @@ const AuthenticationFields: React.FC<Props> = ({
           id="aliasInput"
           placeholder="name@example.com"
           //onKeyDown={loginOnEnter}
-          onChange={onAliasChange}
+          onChange={props.onAliasChange}
         />
         <label htmlFor="aliasInput">Alias</label>
       </div>
@@ -30,7 +27,7 @@ const AuthenticationFields: React.FC<Props> = ({
           id="passwordInput"
           placeholder="Password"
           //onKeyDown={loginOnEnter}
-          onChange={onPasswordChange}
+          onChange={props.onPasswordChange}
         />
         <label htmlFor="passwordInput">Password</label>
       </div>

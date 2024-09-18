@@ -8,13 +8,13 @@ import useUserInfoHook from "../userInfo/userInfoHook";
 export const PAGE_SIZE = 10;
 
 interface Props {
-  itemDescription: string;
   loadMore: (
     authToken: AuthToken,
     userAlias: string,
     pageSize: number,
     lastItem: Status | null
   ) => Promise<[Status[], boolean]>;
+  itemDescription: string;
 }
 
 const StatusItemScroller = (props: Props) => {
