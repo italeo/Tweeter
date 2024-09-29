@@ -4,8 +4,10 @@ import InfiniteScroll from "react-infinite-scroll-component";
 import UserItem from "../userItem/UserItem";
 import useToastListener from "../toaster/ToastListenerHook";
 import useUserInfoHook from "../userInfo/userInfoHook";
-
-export const PAGE_SIZE = 10;
+import {
+  UserItemPresenter,
+  UserItemView,
+} from "../../presenters/UserItemPresenter";
 
 interface Props {
   loadItems: (
@@ -15,17 +17,16 @@ interface Props {
     lastItem: User | null
   ) => Promise<[User[], boolean]>;
   itemDescription: string;
+  // Defined function to pass in view to create the presenter
+  presenterGenerator: (view: UserItemView) => UserItemPresenter;
 }
 
 const UserItemScroller = (props: Props) => {
   const { displayErrorMessage } = useToastListener();
   const [items, setItems] = useState<User[]>([]);
   const [newItems, setNewItems] = useState<User[]>([]);
-  const [hasMoreItems, setHasMoreItems] = useState(true);
-  const [lastItem, setLastItem] = useState<User | null>(null);
-  const [changedDisplayedUser, setChangedDisplayedUser] = useState(true);
 
-  const addItems = (newItems: User[]) => setNewItems(newItems);
+  const [changedDisplayedUser, setChangedDisplayedUser] = useState(true);
 
   const { displayedUser, authToken } = useUserInfoHook();
 
@@ -51,29 +52,21 @@ const UserItemScroller = (props: Props) => {
   const reset = async () => {
     setItems([]);
     setNewItems([]);
-    setLastItem(null);
-    setHasMoreItems(true);
     setChangedDisplayedUser(true);
+    presenter.reset();
   };
 
-  const loadMoreItems = async () => {
-    try {
-      const [newItems, hasMore] = await props.loadItems(
-        authToken!,
-        displayedUser!.alias,
-        PAGE_SIZE,
-        lastItem
-      );
+  // NEW ADD
+  const listener: UserItemView = {
+    addItems: (newItems: User[]) => setNewItems(newItems),
+    displayErrorMessage: displayErrorMessage,
+  };
 
-      setHasMoreItems(hasMore);
-      setLastItem(newItems[newItems.length - 1]);
-      addItems(newItems);
-      setChangedDisplayedUser(false);
-    } catch (error) {
-      displayErrorMessage(
-        `Failed to load ${props.itemDescription} because of exception: ${error}`
-      );
-    }
+  const presenter = props.presenterGenerator(listener);
+
+  const loadMoreItems = async () => {
+    presenter.loadMoreItems(authToken!, displayedUser!.alias);
+    setChangedDisplayedUser(false);
   };
 
   return (
