@@ -90,8 +90,6 @@ const AuthenticatedRoutes = () => {
           element={
             <UserItemScroller
               key={1}
-              loadItems={loadMoreFollowees}
-              itemDescription="followees"
               presenterGenerator={(view: UserItemView) =>
                 new FolloweePresenter(view)
               }
@@ -103,8 +101,6 @@ const AuthenticatedRoutes = () => {
           element={
             <UserItemScroller
               key={2}
-              loadItems={loadMoreFollowers}
-              itemDescription="followers"
               presenterGenerator={(view: UserItemView) =>
                 new FollowerPresenter(view)
               }

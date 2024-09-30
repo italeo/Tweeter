@@ -1,4 +1,4 @@
-import { AuthToken, User } from "tweeter-shared";
+import { User } from "tweeter-shared";
 import { useState, useEffect } from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
 import UserItem from "../userItem/UserItem";
@@ -10,13 +10,6 @@ import {
 } from "../../presenters/UserItemPresenter";
 
 interface Props {
-  loadItems: (
-    authToken: AuthToken,
-    userAlias: string,
-    pageSize: number,
-    lastItem: User | null
-  ) => Promise<[User[], boolean]>;
-  itemDescription: string;
   // Defined function to pass in view to create the presenter
   presenterGenerator: (view: UserItemView) => UserItemPresenter;
 }
@@ -62,7 +55,7 @@ const UserItemScroller = (props: Props) => {
     displayErrorMessage: displayErrorMessage,
   };
 
-  const presenter = props.presenterGenerator(listener);
+  const [presenter] = useState(props.presenterGenerator(listener));
 
   const loadMoreItems = async () => {
     presenter.loadMoreItems(authToken!, displayedUser!.alias);

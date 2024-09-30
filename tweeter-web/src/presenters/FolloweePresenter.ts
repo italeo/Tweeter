@@ -1,4 +1,4 @@
-import { AuthToken, User } from "tweeter-shared";
+import { AuthToken } from "tweeter-shared";
 import { FollowService } from "../model/service/FollowService";
 import { UserItemPresenter, UserItemView } from "./UserItemPresenter";
 
@@ -26,7 +26,7 @@ export class FolloweePresenter extends UserItemPresenter {
       this.view.addItems(newItems);
     } catch (error) {
       this.view.displayErrorMessage(
-        `Failed to load followee because of exception: ${error}`
+        `Failed to load followees because of exception: ${error}`
       );
     }
   }
