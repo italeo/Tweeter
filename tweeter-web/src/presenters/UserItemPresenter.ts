@@ -6,8 +6,8 @@ export interface UserItemView {
 }
 
 export abstract class UserItemPresenter {
-  private hasMoreItems = true;
-  private lastItem: User | null = null;
+  private _hasMoreItems = true;
+  private _lastItem: User | null = null;
 
   private _view: UserItemView;
 
@@ -19,6 +19,21 @@ export abstract class UserItemPresenter {
     return this._view;
   }
 
+  public get hasMoreItems() {
+    return this._hasMoreItems;
+  }
+
+  protected set hasMoreItems(value: boolean) {
+    this._hasMoreItems = value;
+  }
+
+  protected get lastItem() {
+    return this._lastItem;
+  }
+
+  protected set lastItem(value: User | null) {
+    this._lastItem = value;
+  }
   reset() {
     this.lastItem = null;
     this.hasMoreItems = true;

@@ -75,7 +75,7 @@ const UserItemScroller = (props: Props) => {
         className="pr-0 mr-0"
         dataLength={items.length}
         next={loadMoreItems}
-        hasMore={hasMoreItems}
+        hasMore={presenter.hasMoreItems}
         loader={<h4>Loading...</h4>}
       >
         {items.map((item, index) => (
