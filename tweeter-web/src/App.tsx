@@ -11,13 +11,16 @@ import Login from "./components/authentication/login/Login";
 import Register from "./components/authentication/register/Register";
 import MainLayout from "./components/mainLayout/MainLayout";
 import Toaster from "./components/toaster/Toaster";
-import { AuthToken, User, FakeData, Status } from "tweeter-shared";
+import { AuthToken, FakeData, Status } from "tweeter-shared";
 import UserItemScroller from "./components/mainLayout/UserItemScroller";
 import StatusItemScroller from "./components/mainLayout/StatusItemScroller";
 import useUserInfoHook from "./components/userInfo/userInfoHook";
 import { FolloweePresenter } from "./presenters/FolloweePresenter";
 import { UserItemView } from "./presenters/UserItemPresenter";
 import { FollowerPresenter } from "./presenters/FollowerPresenter";
+import { StatusItemView } from "./presenters/StatusItemPresenter";
+import { StoryPresenter } from "./presenters/StoryPresenter";
+import { FeedPresenter } from "./presenters/FeedPresenter";
 
 const App = () => {
   const { currentUser, authToken } = useUserInfoHook();
@@ -41,6 +44,7 @@ const App = () => {
 };
 
 const AuthenticatedRoutes = () => {
+  // Remove after moving into StatusService
   const loadMoreStoryItems = async (
     authToken: AuthToken,
     userAlias: string,
@@ -70,8 +74,10 @@ const AuthenticatedRoutes = () => {
           element={
             <StatusItemScroller
               key={3}
-              itemDescription="feed"
-              loadMore={loadMoreStoryItems}
+              // Call presenter after setting up FeedPresenter
+              presenterGenerator={(view: StatusItemView) =>
+                new FeedPresenter(view)
+              }
             />
           }
         />
@@ -80,8 +86,10 @@ const AuthenticatedRoutes = () => {
           element={
             <StatusItemScroller
               key={4}
-              itemDescription="story"
-              loadMore={loadMoreFeedItems}
+              // Call presenter after setting up StoryPresenter
+              presenterGenerator={(view: StatusItemView) =>
+                new StoryPresenter(view)
+              }
             />
           }
         />
