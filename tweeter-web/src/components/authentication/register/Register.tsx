@@ -8,6 +8,7 @@ import { Buffer } from "buffer";
 import useToastListener from "../../toaster/ToastListenerHook";
 import AuthenticationFields from "../../authenticationFields/AuthenticationFields";
 import useUserInfoHook from "../../userInfo/userInfoHook";
+import { RegisterPresenter } from "../../../presenters/RegisterPresenter";
 
 const Register = () => {
   const [firstName, setFirstName] = useState("");
@@ -23,6 +24,22 @@ const Register = () => {
   const navigate = useNavigate();
   const { updateUserInfo } = useUserInfoHook();
   const { displayErrorMessage } = useToastListener();
+
+  // Define the view - AuthView - interface for the presenter
+  const authView = {
+    authenticated: (user: User, authToken: AuthToken) => {
+      updateUserInfo(user, user, authToken, rememberMe);
+      navigate("/");
+    },
+    displayErrorMessage: (message: string) => {
+      displayErrorMessage(message);
+    },
+    setLoadingState: (isLoading: boolean) => {
+      setIsLoading(isLoading);
+    },
+  };
+
+  const presenter = new RegisterPresenter(authView);
 
   const checkSubmitButtonStatus = (): boolean => {
     return (
@@ -82,30 +99,41 @@ const Register = () => {
     return file.name.split(".").pop();
   };
 
-  const doRegister = async () => {
-    try {
-      setIsLoading(true);
+  /////////////// Code to modify to use presenter
+  const doRegister = () => {
+    presenter.doRegister(
+      firstName,
+      lastName,
+      alias,
+      password,
+      imageBytes,
+      imageFileExtension
+    );
 
-      const [user, authToken] = await register(
-        firstName,
-        lastName,
-        alias,
-        password,
-        imageBytes,
-        imageFileExtension
-      );
+    // try {
+    //   setIsLoading(true);
 
-      updateUserInfo(user, user, authToken, rememberMe);
-      navigate("/");
-    } catch (error) {
-      displayErrorMessage(
-        `Failed to register user because of exception: ${error}`
-      );
-    } finally {
-      setIsLoading(false);
-    }
+    //   const [user, authToken] = await register(
+    //     firstName,
+    //     lastName,
+    //     alias,
+    //     password,
+    //     imageBytes,
+    //     imageFileExtension
+    //   );
+
+    //   updateUserInfo(user, user, authToken, rememberMe);
+    //   navigate("/");
+    // } catch (error) {
+    //   displayErrorMessage(
+    //     `Failed to register user because of exception: ${error}`
+    //   );
+    // } finally {
+    //   setIsLoading(false);
+    // }
   };
-  // REMOVE AFTER CREATING PRESENTER
+  /////////////////////////////////////////////////////
+  ////////////////////// REMOVE AFTER CREATING PRESENTER
   const register = async (
     firstName: string,
     lastName: string,
