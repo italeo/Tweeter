@@ -32,6 +32,7 @@ const Login = (props: Props) => {
     }
   };
 
+  /////////////////////////// FUNCTION TO BE MODIFIED
   const doLogin = async () => {
     try {
       setIsLoading(true);
@@ -53,7 +54,8 @@ const Login = (props: Props) => {
       setIsLoading(false);
     }
   };
-
+  /////////////////////////////////////////////
+  // REMOVE AFTER CREATING PRESENTER
   const login = async (
     alias: string,
     password: string
@@ -67,7 +69,7 @@ const Login = (props: Props) => {
 
     return [user, FakeData.instance.authToken];
   };
-
+  //////////////////////////////////////////
   const inputFieldGenerator = () => {
     return (
       <AuthenticationFields

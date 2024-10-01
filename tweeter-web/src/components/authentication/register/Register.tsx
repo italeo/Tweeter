@@ -105,7 +105,7 @@ const Register = () => {
       setIsLoading(false);
     }
   };
-
+  // REMOVE AFTER CREATING PRESENTER
   const register = async (
     firstName: string,
     lastName: string,
@@ -127,6 +127,7 @@ const Register = () => {
 
     return [user, FakeData.instance.authToken];
   };
+  //////////////////////////////////////////
 
   const inputFieldGenerator = () => {
     return (
