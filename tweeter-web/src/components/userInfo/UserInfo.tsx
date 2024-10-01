@@ -47,6 +47,7 @@ const UserInfo = () => {
     }
   };
 
+  //----------------- REMOVE AFTER PRESENTER ---------------------------
   const getIsFollowerStatus = async (
     authToken: AuthToken,
     user: User,
@@ -55,7 +56,9 @@ const UserInfo = () => {
     // TODO: Replace with the result of calling server
     return FakeData.instance.isFollower();
   };
+  //----------------- REMOVE AFTER PRESENTER ---------------------------
 
+  // ------------ Function to modify to use presenter ------------------
   const setNumbFollowees = async (
     authToken: AuthToken,
     displayedUser: User
@@ -68,7 +71,9 @@ const UserInfo = () => {
       );
     }
   };
+  // -------------------------------------------------------------------
 
+  //----------------- REMOVE AFTER PRESENTER ---------------------------
   const getFolloweeCount = async (
     authToken: AuthToken,
     user: User
@@ -76,6 +81,7 @@ const UserInfo = () => {
     // TODO: Replace with the result of calling server
     return FakeData.instance.getFolloweeCount(user.alias);
   };
+  //----------------- REMOVE AFTER PRESENTER ---------------------------
 
   const setNumbFollowers = async (
     authToken: AuthToken,
@@ -90,6 +96,7 @@ const UserInfo = () => {
     }
   };
 
+  //----------------- REMOVE AFTER PRESENTER ---------------------------
   const getFollowerCount = async (
     authToken: AuthToken,
     user: User
@@ -97,6 +104,7 @@ const UserInfo = () => {
     // TODO: Replace with the result of calling server
     return FakeData.instance.getFollowerCount(user.alias);
   };
+  //----------------- REMOVE AFTER PRESENTER ---------------------------
 
   const switchToLoggedInUser = (event: React.MouseEvent): void => {
     event.preventDefault();

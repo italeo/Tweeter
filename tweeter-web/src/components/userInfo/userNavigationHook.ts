@@ -29,7 +29,7 @@ const useUserNavigation = () => {
     const index = value.indexOf("@");
     return value.substring(index);
   };
-
+  // ------------ Add to UserService -------------------------------------
   const getUser = async (
     authToken: AuthToken,
     alias: string
@@ -37,6 +37,7 @@ const useUserNavigation = () => {
     // TODO: Replace with the result of calling server
     return FakeData.instance.findUserByAlias(alias);
   };
+  // --------------------------------------------------------------
 
   return { navigateToUser };
 };

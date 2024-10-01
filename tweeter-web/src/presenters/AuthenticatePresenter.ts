@@ -6,6 +6,7 @@ export interface AuthView {
   displayErrorMessage: (message: string) => void;
   setLoadingState: (isLoading: boolean) => void;
 }
+
 export class AuthenticatePresenter {
   protected userService: UserService;
   private view: AuthView;

@@ -3,7 +3,7 @@ import "bootstrap/dist/css/bootstrap.css";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import AuthenticationFormLayout from "../AuthenticationFormLayout";
-import { AuthToken, FakeData, User } from "tweeter-shared";
+import { AuthToken, User } from "tweeter-shared";
 import useToastListener from "../../toaster/ToastListenerHook";
 import AuthenticationFields from "../../authenticationFields/AuthenticationFields";
 import useUserInfoHook from "../../userInfo/userInfoHook";
@@ -23,7 +23,7 @@ const Login = (props: Props) => {
   const { updateUserInfo } = useUserInfoHook();
   const { displayErrorMessage } = useToastListener();
 
-  const authView = {
+  const listener = {
     authenticated: (user: User, authToken: AuthToken) => {
       updateUserInfo(user, user, authToken, rememberMe);
       if (props.originalUrl) {
@@ -40,7 +40,7 @@ const Login = (props: Props) => {
     },
   };
 
-  const presenter = new LoginPresenter(authView);
+  const presenter = new LoginPresenter(listener);
 
   const checkSubmitButtonStatus = (): boolean => {
     return !alias || !password;
