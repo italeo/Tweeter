@@ -1,7 +1,7 @@
 import { AuthenticatePresenter, AuthView } from "./AuthenticatePresenter";
 
 export class RegisterPresenter extends AuthenticatePresenter {
-  constructor(view: AuthView) {
+  public constructor(view: AuthView) {
     super(view);
   }
 

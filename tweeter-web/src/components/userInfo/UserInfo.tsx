@@ -27,6 +27,7 @@ const UserInfo = () => {
     setNumbFollowers(authToken!, displayedUser!);
   }, [displayedUser]);
 
+  // -------------- Remove after adding to presenter ------------------------
   const setIsFollowerStatus = async (
     authToken: AuthToken,
     currentUser: User,
@@ -48,6 +49,7 @@ const UserInfo = () => {
   };
 
   //----------------- REMOVE AFTER PRESENTER ---------------------------
+  // --------------- Already in service ------------------------------
   const getIsFollowerStatus = async (
     authToken: AuthToken,
     user: User,
@@ -137,7 +139,7 @@ const UserInfo = () => {
       setIsLoading(false);
     }
   };
-
+  // ------------ MOD for presenter ---------------------------------
   const follow = async (
     authToken: AuthToken,
     userToFollow: User

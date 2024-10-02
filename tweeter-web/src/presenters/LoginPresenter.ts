@@ -1,7 +1,7 @@
 import { AuthenticatePresenter, AuthView } from "./AuthenticatePresenter";
 
 export class LoginPresenter extends AuthenticatePresenter {
-  constructor(view: AuthView) {
+  public constructor(view: AuthView) {
     super(view);
   }
 
@@ -13,7 +13,7 @@ export class LoginPresenter extends AuthenticatePresenter {
       this.authenticated(user, authToken);
     } catch (error) {
       this.displayErrorMessage(
-        `Login failed: ${error instanceof Error ? error.message : error}`
+        `Failed to login user because of exception: ${error}`
       );
     } finally {
       this.setLoadingState(false);
