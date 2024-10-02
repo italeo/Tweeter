@@ -2,9 +2,9 @@ import "./AppNavbar.css";
 import { Container, Nav, Navbar } from "react-bootstrap";
 import { NavLink, useLocation } from "react-router-dom";
 import Image from "react-bootstrap/Image";
-import { AuthToken } from "tweeter-shared";
 import useToastListener from "../toaster/ToastListenerHook";
 import useUserInfoHook from "../userInfo/userInfoHook";
+import { LogoutPresenter, LogoutView } from "../../presenters/LogoutPresenter";
 
 const AppNavbar = () => {
   const location = useLocation();
@@ -12,25 +12,42 @@ const AppNavbar = () => {
   const { displayInfoMessage, displayErrorMessage, clearLastInfoMessage } =
     useToastListener();
 
+  // ----------------- The Listener ---------------------------------------------------
+  const listenter: LogoutView = {
+    displayInfoMessage: displayInfoMessage,
+    displayErrorMessage: displayErrorMessage,
+    clearLastInfoMessage: clearLastInfoMessage,
+    clearUserInfo: clearUserInfo,
+  };
+
+  // ------------------------ The presenter -------------------------------------------------
+  const presenter = new LogoutPresenter(listenter);
+
+  // ------------- Where presenter goes maybe? -----------------------------------------------
   const logOut = async () => {
-    displayInfoMessage("Logging Out...", 0);
+    await presenter.logout(authToken!);
 
-    try {
-      await logout(authToken!);
+    // displayInfoMessage("Logging Out...", 0);
 
-      clearLastInfoMessage();
-      clearUserInfo();
-    } catch (error) {
-      displayErrorMessage(
-        `Failed to log user out because of exception: ${error}`
-      );
-    }
+    // try {
+    //   await logout(authToken!);
+
+    //   clearLastInfoMessage();
+    //   clearUserInfo();
+    // } catch (error) {
+    //   displayErrorMessage(
+    //     `Failed to log user out because of exception: ${error}`
+    //   );
+    // }
   };
+  // --------------------------------------- END ---------------------------------------------------
 
-  const logout = async (authToken: AuthToken): Promise<void> => {
-    // Pause so we can see the logging out message. Delete when the call to the server is implemented.
-    await new Promise((res) => setTimeout(res, 1000));
-  };
+  // -------------------- MOVE TO USERSERVICE ----------------------------------------------------
+  // const logout = async (authToken: AuthToken): Promise<void> => {
+  //   // Pause so we can see the logging out message. Delete when the call to the server is implemented.
+  //   await new Promise((res) => setTimeout(res, 1000));
+  // };
+  // --------------------------------------- END ---------------------------------------------------
 
   return (
     <Navbar
