@@ -31,8 +31,8 @@ export class UserInfoPresenter {
         this.view.setIsFollower(
           await this.followService.getIsFollowerStatus(
             authToken!,
-            currentUser,
-            displayedUser
+            currentUser!,
+            displayedUser!
           )
         );
       }
@@ -99,12 +99,16 @@ export class UserInfoPresenter {
   }
 
   public async unfollowUserCustom(
-    authToken: AuthToken,
-    displayedUser: User
+    _authToken: AuthToken,
+    _displayedUser: User
   ): Promise<void> {
     try {
+      this.view.displayInfoMessage(
+        `Removing ${_displayedUser!.name} from followers...`,
+        0
+      );
       const [followersCount, followeesCount] =
-        await this.followService.unfollow(authToken!, displayedUser!);
+        await this.followService.unfollow(_authToken!, _displayedUser!);
 
       this.view.clearLastInfoMessage();
 

@@ -1,7 +1,6 @@
 import "./UserInfo.css";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { AuthToken, FakeData, User } from "tweeter-shared";
 import useToastListener from "../toaster/ToastListenerHook";
 import useUserInfoHook from "./userInfoHook";
 import {
@@ -13,7 +12,7 @@ const UserInfo = () => {
   const [isFollower, setIsFollower] = useState(false);
   const [followeeCount, setFolloweeCount] = useState(-1);
   const [followerCount, setFollowerCount] = useState(-1);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading] = useState(false);
 
   const { displayErrorMessage, displayInfoMessage, clearLastInfoMessage } =
     useToastListener();
@@ -26,13 +25,12 @@ const UserInfo = () => {
   }
 
   const listener: UserInfoView = {
-    setIsFollower: (isFollower: boolean) => setIsFollower(isFollower),
-    setFolloweesCount: (count: number) => setFolloweeCount(count),
-    setFollowersCount: (count: number) => setFollowerCount(count),
-    displayErrorMessage: (message: string) => displayErrorMessage(message),
-    displayInfoMessage: (message: string, duration: number) =>
-      displayInfoMessage(message, duration),
-    clearLastInfoMessage: () => clearLastInfoMessage(),
+    setIsFollower: setIsFollower,
+    setFolloweesCount: setFolloweeCount,
+    setFollowersCount: setFollowerCount,
+    displayErrorMessage: displayErrorMessage,
+    displayInfoMessage: displayInfoMessage,
+    clearLastInfoMessage: clearLastInfoMessage,
   };
 
   const presenter = new UserInfoPresenter(listener);
