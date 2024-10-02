@@ -44,6 +44,7 @@ const StatusItemScroller = (props: Props) => {
     setItems([]);
     setNewItems([]);
     setChangedDisplayedUser(true);
+    presenter.reset();
   };
 
   const listener: StatusItemView = {
