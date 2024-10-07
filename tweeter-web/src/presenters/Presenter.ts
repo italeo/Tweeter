@@ -24,7 +24,7 @@ export class Presenter {
     return this._view;
   }
 
-  public async doFaliureReportingOperation(
+  public async doFailureReportingOperation(
     operation: () => Promise<void>,
     operationDescription: string
   ): Promise<void> {
