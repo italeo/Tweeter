@@ -14,26 +14,18 @@ export class RegisterPresenter extends AuthenticatePresenter {
     imageBytes: Uint8Array,
     imageFileExtension: string
   ) {
-    this.setLoadingState(true);
-
-    try {
-      const [user, authToken] = await this.userService.register(
-        firstName,
-        lastName,
-        alias,
-        password,
-        imageBytes,
-        imageFileExtension
-      );
-
-      this.authenticated(user, authToken);
-    } catch (error) {
-      this.displayErrorMessage(
-        `Failed to register user because of exception: ${error}`
-      );
-    } finally {
-      this.setLoadingState(false);
-    }
+    await this.doAuthenticateOperation(
+      () =>
+        this.userService.register(
+          firstName,
+          lastName,
+          alias,
+          password,
+          imageBytes,
+          imageFileExtension
+        ),
+      "register user"
+    );
   }
 
   public handleImageFile(

@@ -30,17 +30,5 @@ export class LogoutPresenter extends Presenter<LogoutView> {
       this.view.clearLastInfoMessage();
       this.view.clearUserInfo();
     }, "log user out");
-
-    // OLD TRY CATCH BLOCK
-    // try {
-    //   await this.userService.logout(authToken!);
-
-    //   this.view.clearLastInfoMessage();
-    //   this.view.clearUserInfo();
-    // } catch (error) {
-    //   this.view.displayErrorMessage(
-    //     `Failed to log user out because of exception: ${error}`
-    //   );
-    // }
   }
 }

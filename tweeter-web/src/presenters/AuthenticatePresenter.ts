@@ -1,19 +1,18 @@
 import { User, AuthToken } from "tweeter-shared";
 import { UserService } from "../model/service/UserService";
+import { Presenter, View } from "./Presenter";
 
-export interface AuthView {
+export interface AuthView extends View {
   authenticated: (user: User, authToken: AuthToken) => void;
-  displayErrorMessage: (message: string) => void;
   setLoadingState: (isLoading: boolean) => void;
 }
 
-export class AuthenticatePresenter {
+export class AuthenticatePresenter extends Presenter<AuthView> {
   protected userService: UserService;
-  private view: AuthView;
 
   constructor(view: AuthView) {
+    super(view);
     this.userService = new UserService();
-    this.view = view;
   }
 
   protected setLoadingState(isLoading: boolean) {
@@ -26,5 +25,22 @@ export class AuthenticatePresenter {
 
   protected authenticated(user: User, authToken: AuthToken) {
     this.view.authenticated(user, authToken);
+  }
+
+  protected async doAuthenticateOperation(
+    authOperation: () => Promise<[User, AuthToken]>,
+    operationDescription: String
+  ) {
+    this.setLoadingState(true);
+    try {
+      const [user, authToken] = await authOperation();
+      this.authenticated(user, authToken);
+    } catch (error) {
+      this.displayErrorMessage(
+        `Failed to ${operationDescription} because of exception: ${error}`
+      );
+    } finally {
+      this.setLoadingState(false);
+    }
   }
 }
