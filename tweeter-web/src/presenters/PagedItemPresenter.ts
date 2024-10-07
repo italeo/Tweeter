@@ -1,4 +1,4 @@
-import { AuthToken, User } from "tweeter-shared";
+import { AuthToken } from "tweeter-shared";
 import { Presenter, View } from "./Presenter";
 
 // Generic parnent class for feed and story along with followee and followers.
@@ -9,7 +9,9 @@ export const PAGE_SIZE = 10;
 export interface PagedItemView<T> extends View {
   addItems: (items: T[]) => void;
 }
-export abstract class PagedItemPresenter<T, U> extends Presenter {
+export abstract class PagedItemPresenter<T, U> extends Presenter<
+  PagedItemView<T>
+> {
   private _hasMoreItems = true;
   private _lastItem: T | null = null;
   private _service: U;
@@ -39,10 +41,6 @@ export abstract class PagedItemPresenter<T, U> extends Presenter {
 
   public set lastItem(user: T | null) {
     this._lastItem = user;
-  }
-
-  protected get view(): PagedItemView<T> {
-    return super.view as PagedItemView<T>;
   }
 
   public async loadMoreItems(
