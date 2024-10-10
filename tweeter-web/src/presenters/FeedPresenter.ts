@@ -1,7 +1,6 @@
 import { AuthToken, Status } from "tweeter-shared";
 import { StatusItemPresenter } from "./StatusItemPresenter";
-
-export const PAGE_SIZE = 10;
+import { PAGE_SIZE } from "./PagedItemPresenter";
 
 export class FeedPresenter extends StatusItemPresenter {
   protected getMoreItems(

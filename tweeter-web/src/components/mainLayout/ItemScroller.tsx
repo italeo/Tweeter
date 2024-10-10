@@ -17,10 +17,8 @@ const UserItemScroller = <T, U>(props: Props<T, U>) => {
   const { displayErrorMessage } = useToastListener();
   const [items, setItems] = useState<T[]>([]);
 
-  //   const [newItems, setNewItems] = useState<User[]>([]);
-  //   const [changedDisplayedUser, setChangedDisplayedUser] = useState(true);
-  //   const { displayedUser, authToken } = useUserInfoHook();
-
+  // Required to allow the addItems method to see the current value of 'items'
+  // instead of the value from when the closure was created.
   const itemsReference = useRef(items);
   itemsReference.current = items;
 
@@ -42,40 +40,6 @@ const UserItemScroller = <T, U>(props: Props<T, U>) => {
   const loadMoreItems = async () => {
     presenter.loadMoreItems(authToken!, displayedUser!.alias);
   };
-
-  // Load initial items whenever the displayed user changes. Done in a separate useEffect hook so the changes from reset will be visible.
-  //   useEffect(() => {
-  //     if (changedDisplayedUser) {
-  //       loadMoreItems();
-  //     }
-  //   }, [changedDisplayedUser]);
-
-  //   // Add new items whenever there are new items to add
-  //   useEffect(() => {
-  //     if (newItems) {
-  //       setItems([...items, ...newItems]);
-  //     }
-  //   }, [newItems]);
-
-  //   const reset = async () => {
-  //     setItems([]);
-  //     setNewItems([]);
-  //     setChangedDisplayedUser(true);
-  //     presenter.reset();
-  //   };
-
-  // NEW ADD
-  //   const listener: UserItemView = {
-  //     addItems: (newItems: User[]) => setNewItems(newItems),
-  //     displayErrorMessage: displayErrorMessage,
-  //   };
-
-  //   const [presenter] = useState(props.presenterGenerator(listener));
-
-  //   const loadMoreItems = async () => {
-  //     presenter.loadMoreItems(authToken!, displayedUser!.alias);
-  //     setChangedDisplayedUser(false);
-  //   };
 
   return (
     <div className="container px-0 overflow-visible vh-100">
