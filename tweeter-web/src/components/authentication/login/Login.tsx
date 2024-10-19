@@ -6,8 +6,8 @@ import AuthenticationFormLayout from "../AuthenticationFormLayout";
 import { AuthToken, User } from "tweeter-shared";
 import useToastListener from "../../toaster/ToastListenerHook";
 import AuthenticationFields from "../../authenticationFields/AuthenticationFields";
-import useUserInfoHook from "../../userInfo/userInfoHook";
 import { LoginPresenter } from "../../../presenters/LoginPresenter";
+import useUserInfoHook from "../../userInfo/userInfoHook";
 
 interface Props {
   originalUrl?: string;
