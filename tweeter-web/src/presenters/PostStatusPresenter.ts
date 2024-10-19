@@ -32,9 +32,8 @@ export class PostStatusPresenter extends Presenter<PostStatusView> {
       await this.statusService.postStatus(authToken, status);
       this.view.clearPost();
       this.view.displayInfoMessage("Status posted!", 2000);
-      this.view.clearLastInfoMessage();
     }, "post the status");
-
+    this.view.clearLastInfoMessage();
     this.view.setLoading(false);
   }
 }

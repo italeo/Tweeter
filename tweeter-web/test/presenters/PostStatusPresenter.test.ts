@@ -49,7 +49,6 @@ describe("PostStatusPresenter", () => {
     await postStatusPresenter.postStatus(authToken, post, currentUser);
     verify(mockPostStatusPresenterView.clearLastInfoMessage()).once();
     verify(mockPostStatusPresenterView.clearPost()).once();
-
     verify(
       mockPostStatusPresenterView.displayErrorMessage(
         "Failed to post the status because of exception: An error occured"
@@ -57,7 +56,7 @@ describe("PostStatusPresenter", () => {
     ).never();
   });
 
-  it("displays an error message and does not clear the last info message, clear the post, and display a status posted message.", async () => {
+  it("displays an error message and does clear the last info message, does not clear the post, or display a status posted message.", async () => {
     const error = new Error("An error occured");
     when(mockStatusService.postStatus(authToken, anything())).thenThrow(error);
 
@@ -69,7 +68,7 @@ describe("PostStatusPresenter", () => {
       )
     ).once();
 
-    verify(mockPostStatusPresenterView.clearLastInfoMessage()).never();
+    verify(mockPostStatusPresenterView.clearLastInfoMessage()).once();
     verify(mockPostStatusPresenterView.clearPost()).never();
   });
 });
