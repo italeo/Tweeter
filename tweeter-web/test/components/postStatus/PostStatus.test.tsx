@@ -30,6 +30,46 @@ describe("PostStatus Component", () => {
     expect(postStatusButton).toBeDisabled();
     expect(clearPostButton).toBeDisabled();
   });
+
+  it("enables both the post status and clear button when the text field has text", async () => {
+    const { postStatusButton, clearPostButton, postStatusTextArea, user } =
+      renderPostStatusGetElements();
+
+    await user.type(postStatusTextArea, "a post");
+
+    expect(postStatusButton).toBeEnabled();
+    expect(clearPostButton).toBeEnabled();
+  });
+
+  it("disables both the post status ans clear button when text field is clear", async () => {
+    const { postStatusButton, clearPostButton, postStatusTextArea, user } =
+      renderPostStatusGetElements();
+
+    await user.type(postStatusTextArea, "a post");
+    expect(postStatusButton).toBeEnabled();
+    expect(clearPostButton).toBeEnabled();
+
+    await user.clear(postStatusTextArea);
+    expect(postStatusButton).toBeDisabled();
+    expect(clearPostButton).toBeDisabled();
+  });
+
+  it("is called with correct parameters when the Post Status button is pressed", async () => {
+    const mockPresenter = mock<PostStatusPresenter>();
+    const mockPresenterInstance = instance(mockPresenter);
+
+    const expectedPost = "a post";
+
+    const { postStatusButton, postStatusTextArea, user } =
+      renderPostStatusGetElements(mockPresenterInstance);
+
+    await user.type(postStatusTextArea, "a post");
+    await user.click(postStatusButton);
+
+    verify(
+      mockPresenter.postStatus(anything(), expectedPost, anything())
+    ).once();
+  });
 });
 
 const renderPostStatus = (presenter?: PostStatusPresenter) => {
