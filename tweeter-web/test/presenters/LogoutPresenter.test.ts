@@ -52,6 +52,7 @@ describe("LogoutPresenter", () => {
     await logoutPresenter.logout(authToken);
     verify(mockLogoutPresenterView.clearLastInfoMessage()).once();
     verify(mockLogoutPresenterView.clearUserInfo()).once();
+    verify(mockLogoutPresenterView.navigateToLogin()).once();
 
     verify(mockLogoutPresenterView.displayErrorMessage(anything())).never();
   });
@@ -76,5 +77,6 @@ describe("LogoutPresenter", () => {
     ).once();
     verify(mockLogoutPresenterView.clearLastInfoMessage()).never();
     verify(mockLogoutPresenterView.clearUserInfo()).never();
+    verify(mockLogoutPresenterView.navigateToLogin()).never();
   });
 });

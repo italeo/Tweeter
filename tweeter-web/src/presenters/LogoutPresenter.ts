@@ -2,7 +2,9 @@ import { AuthToken } from "tweeter-shared";
 import { UserService } from "../model/service/UserService";
 import { MessageView, Presenter } from "./Presenter";
 
-export interface LogoutView extends MessageView {}
+export interface LogoutView extends MessageView {
+  navigateToLogin: () => void;
+}
 
 export class LogoutPresenter extends Presenter<LogoutView> {
   private service: UserService | null = null;
@@ -29,6 +31,7 @@ export class LogoutPresenter extends Presenter<LogoutView> {
       await this.userService.logout(authToken!);
       this.view.clearLastInfoMessage();
       this.view.clearUserInfo();
+      this.view.navigateToLogin();
     }, "log user out");
   }
 }

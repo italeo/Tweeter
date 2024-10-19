@@ -1,6 +1,6 @@
 import "./AppNavbar.css";
 import { Container, Nav, Navbar } from "react-bootstrap";
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import Image from "react-bootstrap/Image";
 import useToastListener from "../toaster/ToastListenerHook";
 import useUserInfoHook from "../userInfo/userInfoHook";
@@ -8,6 +8,7 @@ import { LogoutPresenter, LogoutView } from "../../presenters/LogoutPresenter";
 
 const AppNavbar = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { authToken, clearUserInfo } = useUserInfoHook();
   const { displayInfoMessage, displayErrorMessage, clearLastInfoMessage } =
     useToastListener();
@@ -18,6 +19,7 @@ const AppNavbar = () => {
     displayErrorMessage: displayErrorMessage,
     clearLastInfoMessage: clearLastInfoMessage,
     clearUserInfo: clearUserInfo,
+    navigateToLogin: () => navigate("/login"),
   };
 
   // ------------------------ The presenter -------------------------------------------------
@@ -26,27 +28,7 @@ const AppNavbar = () => {
   // ------------- Where presenter goes maybe? -----------------------------------------------
   const logOut = async () => {
     await presenter.logout(authToken!);
-
-    // displayInfoMessage("Logging Out...", 0);
-
-    // try {
-    //   await logout(authToken!);
-
-    //   clearLastInfoMessage();
-    //   clearUserInfo();
-    // } catch (error) {
-    //   displayErrorMessage(
-    //     `Failed to log user out because of exception: ${error}`
-    //   );
-    // }
   };
-  // --------------------------------------- END ---------------------------------------------------
-
-  // -------------------- MOVE TO USERSERVICE ----------------------------------------------------
-  // const logout = async (authToken: AuthToken): Promise<void> => {
-  //   // Pause so we can see the logging out message. Delete when the call to the server is implemented.
-  //   await new Promise((res) => setTimeout(res, 1000));
-  // };
   // --------------------------------------- END ---------------------------------------------------
 
   return (
