@@ -7,11 +7,15 @@ export interface PostStatusView extends StatusMessageView {
   clearPost: () => void;
 }
 export class PostStatusPresenter extends Presenter<PostStatusView> {
-  private statusService: StatusService;
+  private _statusService: StatusService;
 
   public constructor(view: PostStatusView) {
     super(view);
-    this.statusService = new StatusService();
+    this._statusService = new StatusService();
+  }
+
+  public get statusService() {
+    return this._statusService;
   }
 
   public async postStatus(
@@ -28,8 +32,9 @@ export class PostStatusPresenter extends Presenter<PostStatusView> {
       await this.statusService.postStatus(authToken, status);
       this.view.clearPost();
       this.view.displayInfoMessage("Status posted!", 2000);
+      this.view.clearLastInfoMessage();
     }, "post the status");
-    this.view.clearLastInfoMessage();
+
     this.view.setLoading(false);
   }
 }
