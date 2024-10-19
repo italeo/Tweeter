@@ -11,6 +11,7 @@ import { LoginPresenter } from "../../../presenters/LoginPresenter";
 
 interface Props {
   originalUrl?: string;
+  presenter?: LoginPresenter;
 }
 
 const Login = (props: Props) => {
@@ -40,14 +41,14 @@ const Login = (props: Props) => {
     },
   };
 
-  const presenter = new LoginPresenter(listener);
+  const presenter = props.presenter ?? new LoginPresenter(listener);
 
   const checkSubmitButtonStatus = (): boolean => {
     return !alias || !password;
   };
 
   const doLogin = () => {
-    presenter.doLogin(alias, password);
+    presenter.doLogin(alias, password, props.originalUrl);
   };
 
   const inputFieldGenerator = () => {
