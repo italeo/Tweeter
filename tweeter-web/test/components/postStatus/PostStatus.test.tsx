@@ -24,6 +24,7 @@ describe("PostStatus Component", () => {
       authToken: mockAuthTokenInstance,
     });
   });
+
   it("starts with post status and clear button both disabled", () => {
     const { postStatusButton, clearPostButton } = renderPostStatusGetElements();
 
@@ -50,6 +51,7 @@ describe("PostStatus Component", () => {
     expect(clearPostButton).toBeEnabled();
 
     await user.clear(postStatusTextArea);
+
     expect(postStatusButton).toBeDisabled();
     expect(clearPostButton).toBeDisabled();
   });

@@ -23,7 +23,6 @@ describe("Login Component", () => {
 
     await user.type(aliasField, "a");
     await user.type(passwordField, "pass");
-
     expect(signInButton).toBeEnabled();
   });
 

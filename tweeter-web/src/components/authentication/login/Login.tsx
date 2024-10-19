@@ -41,7 +41,7 @@ const Login = (props: Props) => {
     },
   };
 
-  const presenter = props.presenter ?? new LoginPresenter(listener);
+  const [presenter] = useState(props.presenter ?? new LoginPresenter(listener));
 
   const checkSubmitButtonStatus = (): boolean => {
     return !alias || !password;
