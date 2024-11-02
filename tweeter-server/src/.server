@@ -1,0 +1,6 @@
+BUCKET='tweeter-bucket-unique'
+LAMBDA_ROLE='arn:aws:iam::506149017946:role/LambdaExecutionRole'
+EDIT_LAMBDALIST='
+tweeterGetFollowees | lambda/follow/GetFolloweesLambda.handler
+'
+LAMBDALAYER_ARN='arn:aws:lambda:us-west-2:506149017946:layer:tweeterLambdaLayer:1'
