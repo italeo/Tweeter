@@ -12,12 +12,12 @@ export class ClientCommunicator {
     endpoint: string,
     headers?: Headers
   ): Promise<RES> {
-    if (headers && req) {
-      headers.append("Content-type", "application/json");
-    } else if (req) {
+    if (!headers) {
       headers = new Headers({
         "Content-type": "application/json",
       });
+    } else {
+      headers.set("Content-type", "application/json");
     }
 
     console.log(`The request body is '${JSON.stringify(req)}'`);
@@ -35,19 +35,16 @@ export class ClientCommunicator {
       const resp: Response = await fetch(url, params);
 
       if (resp.ok) {
-        // Be careful with the return type here. resp.json() returns Promise<any> which means there is no type checking on response.
         const response: RES = await resp.json();
         return response;
       } else {
         const error = await resp.json();
-        throw new Error(error.errorMessage);
+        throw new Error(error.errorMessage || "An unknown error occurred");
       }
     } catch (error) {
-      console.error(error);
+      console.error("ClientCommunicator error:", error);
       throw new Error(
-        `Client communicator ${params.method} failed:\n${
-          (error as Error).message
-        }`
+        `Client communicator POST failed:\n${(error as Error).message}`
       );
     }
   }

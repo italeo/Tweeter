@@ -1,7 +1,9 @@
 import { Buffer } from "buffer";
 import { User, AuthToken, FakeData } from "tweeter-shared";
+import { ServerFacade } from "../network/ServerFacade";
 
 export class UserService {
+  private serverFacade = ServerFacade.getInstance();
   public async login(
     alias: string,
     password: string
@@ -28,14 +30,16 @@ export class UserService {
     const imageStringBase64: string =
       Buffer.from(userImageBytes).toString("base64");
 
-    // TODO: Replace with the result of calling the server
-    const user = FakeData.instance.firstUser;
+    const request = {
+      firstName,
+      lastName,
+      alias,
+      password,
+      userImageBase64: imageStringBase64,
+      imageFileExtension,
+    };
 
-    if (user === null) {
-      throw new Error("Invalid registration");
-    }
-
-    return [user, FakeData.instance.authToken];
+    return await this.serverFacade.register(request);
   }
 
   public async getUser(

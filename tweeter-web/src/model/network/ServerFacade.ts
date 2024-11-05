@@ -1,8 +1,12 @@
 import {
+  AuthToken,
+  AuthTokenDto,
   PagedStatusItemRequest,
   PagedStatusItemResponse,
   PagedUserItemRequest,
   PagedUserItemResponse,
+  RegisterRequest,
+  RegisterResponse,
   Status,
   StatusDto,
   User,
@@ -211,6 +215,44 @@ export class ServerFacade {
     } else {
       console.error(response);
       throw new Error(response.message || "An error occurred");
+    }
+  }
+
+  public async register(
+    request: Omit<RegisterRequest, "token">
+  ): Promise<[User, AuthToken]> {
+    const fullRequest: RegisterRequest = {
+      ...request,
+      token: "placeholder_token", // Provide a dummy token value
+    };
+
+    try {
+      const response = await this.clientCommunicator.doPost<
+        RegisterRequest,
+        RegisterResponse
+      >(fullRequest, "/register");
+
+      if (response.success) {
+        const user = User.fromDto(response.user as UserDto);
+        const authToken = AuthToken.fromDto(response.authToken as AuthTokenDto);
+        return [user as User, authToken as AuthToken];
+      } else {
+        console.error("Register failed:", response);
+        throw new Error(
+          response.message || "An error occurred during registration"
+        );
+      }
+    } catch (error) {
+      if (error instanceof Error) {
+        console.error("Client communicator POST failed:", error.message);
+        throw new Error("Client communicator POST failed: " + error.message);
+      } else {
+        console.error(
+          "Client communicator POST failed with unknown error:",
+          error
+        );
+        throw new Error("Client communicator POST failed with unknown error");
+      }
     }
   }
 }

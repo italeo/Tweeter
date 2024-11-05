@@ -1,4 +1,6 @@
 import { v4 as uuid } from "uuid";
+import { AuthTokenDto } from "../dto/AuthTokenDto";
+
 export class AuthToken {
   private _token: string;
   private _timestamp: number;
@@ -62,4 +64,24 @@ export class AuthToken {
   public toJson(): string {
     return JSON.stringify(this);
   }
+
+  // Helper functions needed to handle the DTOs
+  // -----------------------------------------------------------
+  // Convert AuthToken to AuthTokenDto
+  public toDto(): AuthTokenDto {
+    return {
+      token: this._token,
+      timestamp: this._timestamp,
+    };
+  }
+
+  public get dto(): AuthTokenDto {
+    return this.toDto();
+  }
+
+  // Convert AuthTokenDto to AuthToken
+  public static fromDto(dto: AuthTokenDto): AuthToken {
+    return new AuthToken(dto.token, dto.timestamp);
+  }
+  // -----------------------------------------------------------
 }
