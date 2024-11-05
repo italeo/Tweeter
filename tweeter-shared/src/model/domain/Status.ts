@@ -294,8 +294,16 @@ export class Status {
   }
 
   // Convert StatusDto to Status
-  public static fromDto(dto: StatusDto): Status {
-    const user = User.fromDto(dto.user)!;
+  public static fromDto(dto: StatusDto | null): Status | null {
+    if (dto === null) {
+      return null;
+    }
+
+    const user = User.fromDto(dto.user);
+    if (user === null) {
+      throw new Error("Invalid UserDto in StatusDto");
+    }
+
     const status = new Status(dto.post, user, dto.timestamp);
     status._segments = dto.segments.map((segmentDto) =>
       PostSegment.fromDto(segmentDto)
