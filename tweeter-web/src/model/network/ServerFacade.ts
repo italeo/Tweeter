@@ -1,6 +1,10 @@
 import {
+  PagedStatusItemRequest,
+  PagedStatusItemResponse,
   PagedUserItemRequest,
   PagedUserItemResponse,
+  Status,
+  StatusDto,
   User,
   UserDto,
 } from "tweeter-shared";
@@ -154,6 +158,31 @@ export class ServerFacade {
 
     if (response.success) {
       return [response.followerCount, response.followeeCount];
+    } else {
+      console.error(response);
+      throw new Error(response.message || "An error occurred");
+    }
+  }
+
+  public async getMoreStoryItems(
+    request: PagedStatusItemRequest
+  ): Promise<[Status[], boolean]> {
+    const response = await this.clientCommunicator.doPost<
+      PagedStatusItemRequest,
+      PagedStatusItemResponse
+    >(request, "/story/list");
+
+    const items: Status[] | null =
+      response.success && response.items
+        ? response.items.map((dto: StatusDto) => Status.fromDto(dto) as Status)
+        : null;
+
+    if (response.success) {
+      if (items === null) {
+        throw new Error(`No story items found`);
+      } else {
+        return [items, response.hasMore];
+      }
     } else {
       console.error(response);
       throw new Error(response.message || "An error occurred");
