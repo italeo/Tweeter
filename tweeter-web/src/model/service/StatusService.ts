@@ -21,7 +21,7 @@ export class StatusService {
       pageSize,
       lastItem: lastItem ? lastItem.toDto() : null,
     };
-    // TODO: Replace with the result of calling server
+
     return await this.serverFacade.getMoreStoryItems(request);
   }
 
@@ -31,8 +31,14 @@ export class StatusService {
     pageSize: number,
     lastItem: Status | null
   ): Promise<[Status[], boolean]> {
-    // TODO: Replace with the result of calling server
-    return FakeData.instance.getPageOfStatuses(lastItem, pageSize);
+    const request: PagedStatusItemRequest = {
+      token: authToken.token,
+      userAlias: userAlias,
+      pageSize: pageSize,
+      lastItem: lastItem ? lastItem.toDto() : null,
+    };
+
+    return await this.serverFacade.getMoreFeedItems(request);
   }
 
   public async postStatus(
