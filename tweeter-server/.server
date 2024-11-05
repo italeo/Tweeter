@@ -6,5 +6,6 @@ tweeterGetFollowers | lambda/follow/GetFollowersLambda.handler
 tweeterGetStory | lambda/status/GetStoryLambda.handler
 tweeterGetFeed | lambda/status/GetFeedLambda.handler
 tweeterRegister | lambda/user/GetRegisterLambda.handler
+tweeterLogin | lambda/user/GetLoginLambda.handler
 '
-LAMBDALAYER_ARN='arn:aws:lambda:us-west-2:506149017946:layer:tweeterLambdaLayer:8'
+LAMBDALAYER_ARN='arn:aws:lambda:us-west-2:506149017946:layer:tweeterLambdaLayer:9'

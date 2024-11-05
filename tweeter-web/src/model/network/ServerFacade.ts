@@ -1,6 +1,8 @@
 import {
   AuthToken,
   AuthTokenDto,
+  LoginRequest,
+  LoginResponse,
   PagedStatusItemRequest,
   PagedStatusItemResponse,
   PagedUserItemRequest,
@@ -241,6 +243,35 @@ export class ServerFacade {
         throw new Error(
           response.message || "An error occurred during registration"
         );
+      }
+    } catch (error) {
+      if (error instanceof Error) {
+        console.error("Client communicator POST failed:", error.message);
+        throw new Error("Client communicator POST failed: " + error.message);
+      } else {
+        console.error(
+          "Client communicator POST failed with unknown error:",
+          error
+        );
+        throw new Error("Client communicator POST failed with unknown error");
+      }
+    }
+  }
+
+  public async login(request: LoginRequest): Promise<[User, AuthToken]> {
+    try {
+      const response = await this.clientCommunicator.doPost<
+        LoginRequest,
+        LoginResponse
+      >(request, "/login");
+
+      if (response.success) {
+        const user = User.fromDto(response.user as UserDto);
+        const authToken = AuthToken.fromDto(response.authToken as AuthTokenDto);
+        return [user as User, authToken as AuthToken];
+      } else {
+        console.error("Login failed:", response);
+        throw new Error(response.message || "An error occurred during login");
       }
     } catch (error) {
       if (error instanceof Error) {

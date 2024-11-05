@@ -11,7 +11,7 @@ export class UserService {
   public async login(
     alias: string,
     password: string
-  ): Promise<[User, AuthToken]> {
+  ): Promise<[UserDto, AuthTokenDto]> {
     // TODO: Replace with the result of calling the server
     const user = FakeData.instance.firstUser;
 
@@ -19,7 +19,7 @@ export class UserService {
       throw new Error("Invalid alias or password");
     }
 
-    return [user, FakeData.instance.authToken];
+    return [user.toDto(), FakeData.instance.authToken.toDto()];
   }
 
   public async register(

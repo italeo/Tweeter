@@ -15,7 +15,12 @@ export class UserService {
       throw new Error("Invalid alias or password");
     }
 
-    return [user, FakeData.instance.authToken];
+    const request = {
+      alias,
+      password,
+    };
+
+    return await this.serverFacade.login(request);
   }
 
   public async register(
