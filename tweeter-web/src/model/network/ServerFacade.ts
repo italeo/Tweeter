@@ -7,8 +7,22 @@ import {
 import { ClientCommunicator } from "./ClientCommunicator";
 
 export class ServerFacade {
-  private SERVER_URL = "TODO: Set this value.";
-  private clientCommunicator = new ClientCommunicator(this.SERVER_URL);
+  private static instance: ServerFacade;
+  private SERVER_URL =
+    "https://hhx5pg1c5c.execute-api.us-west-2.amazonaws.com/dev";
+  private clientCommunicator: ClientCommunicator;
+
+  private constructor() {
+    this.clientCommunicator = new ClientCommunicator(this.SERVER_URL);
+  }
+
+  // Singleton access method
+  public static getInstance(): ServerFacade {
+    if (!ServerFacade.instance) {
+      ServerFacade.instance = new ServerFacade();
+    }
+    return ServerFacade.instance;
+  }
 
   public async getMoreFollowees(
     request: PagedUserItemRequest
@@ -20,11 +34,11 @@ export class ServerFacade {
 
     const items: User[] | null =
       response.success && response.items
-        ? response.items.map((dto) => User.fromDto(dto) as User)
+        ? response.items.map((dto: UserDto) => User.fromDto(dto) as User)
         : null;
 
     if (response.success) {
-      if (items == null) {
+      if (items === null) {
         throw new Error(`No followees found`);
       } else {
         return [items, response.hasMore];
@@ -45,11 +59,11 @@ export class ServerFacade {
 
     const items: User[] | null =
       response.success && response.items
-        ? response.items.map((dto) => User.fromDto(dto) as User)
+        ? response.items.map((dto: UserDto) => User.fromDto(dto) as User)
         : null;
 
     if (response.success) {
-      if (items == null) {
+      if (items === null) {
         throw new Error(`No followers found`);
       } else {
         return [items, response.hasMore];
