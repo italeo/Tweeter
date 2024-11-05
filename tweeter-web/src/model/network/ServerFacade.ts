@@ -220,19 +220,12 @@ export class ServerFacade {
     }
   }
 
-  public async register(
-    request: Omit<RegisterRequest, "token">
-  ): Promise<[User, AuthToken]> {
-    const fullRequest: RegisterRequest = {
-      ...request,
-      token: "placeholder_token", // Provide a dummy token value
-    };
-
+  public async register(request: RegisterRequest): Promise<[User, AuthToken]> {
     try {
       const response = await this.clientCommunicator.doPost<
         RegisterRequest,
         RegisterResponse
-      >(fullRequest, "/register");
+      >(request, "/register");
 
       if (response.success) {
         const user = User.fromDto(response.user as UserDto);
