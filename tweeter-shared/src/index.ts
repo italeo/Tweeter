@@ -27,6 +27,10 @@ export type { LogoutRequest } from "./model/net/request/LogoutRequest";
 export type { GetUserRequest } from "./model/net/request/GetUserRequest";
 export type { PostStatusRequest } from "./model/net/request/PostStatusRequest";
 export type { GetIsFollowerStatusRequest } from "./model/net/request/GetIsFollowerStatusRequest";
+export type { FollowRequest } from "./model/net/request/FollowRequest";
+export type { UnfollowRequest } from "./model/net/request/UnfollowRequest";
+export type { GetFolloweeCountRequest } from "./model/net/request/GetFolloweeCountRequest";
+export type { GetFollowerCountRequest } from "./model/net/request/GetFollowerCountRequest";
 
 //
 // Responses
@@ -40,6 +44,10 @@ export type { LogoutResponse } from "./model/net/response/LogoutResponse";
 export type { GetUserResponse } from "./model/net/response/GetUserResponse";
 export type { PostStatusResponse } from "./model/net/response/PostStatusResponse";
 export type { GetIsFollowerStatusResponse } from "./model/net/response/GetIsFollowerStatusResponse";
+export type { FollowResponse } from "./model/net/response/FollowResponse";
+export type { UnfollowResponse } from "./model/net/response/UnfollowResponse";
+export type { GetFolloweeCountResponse } from "./model/net/response/GetFolloweeCountResponse";
+export type { GetFollowerCountResponse } from "./model/net/response/GetFollowerCountResponse";
 
 //
 // others
