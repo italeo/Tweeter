@@ -3,6 +3,8 @@ import {
   AuthTokenDto,
   LoginRequest,
   LoginResponse,
+  LogoutRequest,
+  LogoutResponse,
   PagedStatusItemRequest,
   PagedStatusItemResponse,
   PagedUserItemRequest,
@@ -201,7 +203,7 @@ export class ServerFacade {
     const response = await this.clientCommunicator.doPost<
       PagedStatusItemRequest,
       PagedStatusItemResponse
-    >(request, "/feed/list"); // Update with the correct endpoint for feed items
+    >(request, "/feed/list");
 
     const items: Status[] | null =
       response.success && response.items
@@ -220,12 +222,19 @@ export class ServerFacade {
     }
   }
 
-  public async register(request: RegisterRequest): Promise<[User, AuthToken]> {
+  public async register(
+    request: Omit<RegisterRequest, "token">
+  ): Promise<[User, AuthToken]> {
+    const fullRequest: RegisterRequest = {
+      ...request,
+      token: "dummy_token_for_registration",
+    };
+
     try {
       const response = await this.clientCommunicator.doPost<
         RegisterRequest,
         RegisterResponse
-      >(request, "/register");
+      >(fullRequest, "/register");
 
       if (response.success) {
         const user = User.fromDto(response.user as UserDto);
@@ -251,12 +260,19 @@ export class ServerFacade {
     }
   }
 
-  public async login(request: LoginRequest): Promise<[User, AuthToken]> {
+  public async login(
+    request: Omit<LoginRequest, "token">
+  ): Promise<[User, AuthToken]> {
+    const fullRequest: LoginRequest = {
+      ...request,
+      token: "dummy_token_for_login",
+    };
+
     try {
       const response = await this.clientCommunicator.doPost<
         LoginRequest,
         LoginResponse
-      >(request, "/login");
+      >(fullRequest, "/login");
 
       if (response.success) {
         const user = User.fromDto(response.user as UserDto);
@@ -265,6 +281,35 @@ export class ServerFacade {
       } else {
         console.error("Login failed:", response);
         throw new Error(response.message || "An error occurred during login");
+      }
+    } catch (error) {
+      if (error instanceof Error) {
+        console.error("Client communicator POST failed:", error.message);
+        throw new Error("Client communicator POST failed: " + error.message);
+      } else {
+        console.error(
+          "Client communicator POST failed with unknown error:",
+          error
+        );
+        throw new Error("Client communicator POST failed with unknown error");
+      }
+    }
+  }
+
+  public async logout(authToken: AuthToken): Promise<void> {
+    const request: LogoutRequest = {
+      token: authToken.token,
+    };
+
+    try {
+      const response = await this.clientCommunicator.doPost<
+        LogoutRequest,
+        LogoutResponse
+      >(request, "/logout");
+
+      if (!response.success) {
+        console.error("Logout failed:", response);
+        throw new Error(response.message || "An error occurred during logout");
       }
     } catch (error) {
       if (error instanceof Error) {

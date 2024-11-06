@@ -7,5 +7,6 @@ tweeterGetStory | lambda/status/GetStoryLambda.handler
 tweeterGetFeed | lambda/status/GetFeedLambda.handler
 tweeterRegister | lambda/user/GetRegisterLambda.handler
 tweeterLogin | lambda/user/GetLoginLambda.handler
+tweeterLogout | lambda/user/GetLogoutLambda.handler
 '
-LAMBDALAYER_ARN='arn:aws:lambda:us-west-2:506149017946:layer:tweeterLambdaLayer:9'
+LAMBDALAYER_ARN='arn:aws:lambda:us-west-2:506149017946:layer:tweeterLambdaLayer:11'

@@ -23,6 +23,7 @@ export type { PagedUserItemRequest } from "./model/net/request/PagedUserItemRequ
 export type { PagedStatusItemRequest } from "./model/net/request/PagedStatusItemRequest";
 export type { RegisterRequest } from "./model/net/request/RegisterRequest";
 export type { LoginRequest } from "./model/net/request/LoginRequest";
+export type { LogoutRequest } from "./model/net/request/LogoutRequest";
 
 //
 // Responses
@@ -32,6 +33,7 @@ export type { PagedUserItemResponse } from "./model/net/response/PagedUserItemRe
 export type { PagedStatusItemResponse } from "./model/net/response/PagedStatusItemResponse";
 export type { RegisterResponse } from "./model/net/response/RegisterResponse";
 export type { LoginResponse } from "./model/net/response/LoginResponse";
+export type { LogoutResponse } from "./model/net/response/LogoutResponse";
 
 //
 // others
