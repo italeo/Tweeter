@@ -27,6 +27,8 @@ export class StatusService {
     // Will need the actual server call in the future
   }
 
+  // ------------ Helper function --------------------------------
+
   private async getFakeData(
     lastItem: StatusDto | null,
     pageSize: number
@@ -38,4 +40,5 @@ export class StatusService {
     const dtos = items.map((status) => status.toDto());
     return [dtos, hasMore];
   }
+  // ---------------------------------------------------------------
 }

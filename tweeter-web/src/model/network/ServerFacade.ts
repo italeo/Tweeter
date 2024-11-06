@@ -1,6 +1,8 @@
 import {
   AuthToken,
   AuthTokenDto,
+  GetIsFollowerStatusRequest,
+  GetIsFollowerStatusResponse,
   GetUserRequest,
   GetUserResponse,
   LoginRequest,
@@ -32,7 +34,6 @@ export class ServerFacade {
     this.clientCommunicator = new ClientCommunicator(this.SERVER_URL);
   }
 
-  // Singleton access method
   public static getInstance(): ServerFacade {
     if (!ServerFacade.instance) {
       ServerFacade.instance = new ServerFacade();
@@ -40,6 +41,9 @@ export class ServerFacade {
     return ServerFacade.instance;
   }
 
+  //
+  // Follow calls
+  //
   public async getMoreFollowees(
     request: PagedUserItemRequest
   ): Promise<[User[], boolean]> {
@@ -91,91 +95,47 @@ export class ServerFacade {
   }
 
   public async getIsFollowerStatus(
-    authToken: string,
-    userId: string,
-    selectedUserId: string
+    token: string,
+    user: UserDto,
+    selectedUser: UserDto
   ): Promise<boolean> {
-    const response = await this.clientCommunicator.doPost<any, any>(
-      { authToken, userId, selectedUserId },
-      "/follower/status"
-    );
+    const request = {
+      token: token,
+      user: user,
+      selectedUser: selectedUser,
+    };
 
-    if (response.success) {
-      return response.isFollower;
-    } else {
-      console.error(response);
-      throw new Error(response.message || "An error occurred");
+    try {
+      const response = await this.clientCommunicator.doPost<
+        GetIsFollowerStatusRequest,
+        GetIsFollowerStatusResponse
+      >(request, "/follower/status");
+
+      if (response.success) {
+        return response.isFollower;
+      } else {
+        console.error("GetIsFollowerStatus failed:", response);
+        throw new Error(
+          response.message || "An error occurred while checking follower status"
+        );
+      }
+    } catch (error) {
+      if (error instanceof Error) {
+        console.error("Client communicator POST failed:", error.message);
+        throw new Error("Client communicator POST failed: " + error.message);
+      } else {
+        console.error(
+          "Client communicator POST failed with unknown error:",
+          error
+        );
+        throw new Error("Client communicator POST failed with unknown error");
+      }
     }
   }
 
-  public async getFolloweeCount(
-    authToken: string,
-    userId: string
-  ): Promise<number> {
-    const response = await this.clientCommunicator.doPost<any, any>(
-      { authToken, userId },
-      "/followee/count"
-    );
-
-    if (response.success) {
-      return response.count;
-    } else {
-      console.error(response);
-      throw new Error(response.message || "An error occurred");
-    }
-  }
-
-  public async getFollowerCount(
-    authToken: string,
-    userId: string
-  ): Promise<number> {
-    const response = await this.clientCommunicator.doPost<any, any>(
-      { authToken, userId },
-      "/follower/count"
-    );
-
-    if (response.success) {
-      return response.count;
-    } else {
-      console.error(response);
-      throw new Error(response.message || "An error occurred");
-    }
-  }
-
-  public async follow(
-    authToken: string,
-    userToFollowId: string
-  ): Promise<[number, number]> {
-    const response = await this.clientCommunicator.doPost<any, any>(
-      { authToken, userToFollowId },
-      "/follow"
-    );
-
-    if (response.success) {
-      return [response.followerCount, response.followeeCount];
-    } else {
-      console.error(response);
-      throw new Error(response.message || "An error occurred");
-    }
-  }
-
-  public async unfollow(
-    authToken: string,
-    userToUnfollowId: string
-  ): Promise<[number, number]> {
-    const response = await this.clientCommunicator.doPost<any, any>(
-      { authToken, userToUnfollowId },
-      "/unfollow"
-    );
-
-    if (response.success) {
-      return [response.followerCount, response.followeeCount];
-    } else {
-      console.error(response);
-      throw new Error(response.message || "An error occurred");
-    }
-  }
-
+  //
+  // Status calls
+  //
   public async getMoreStoryItems(
     request: PagedStatusItemRequest
   ): Promise<[Status[], boolean]> {
@@ -226,6 +186,41 @@ export class ServerFacade {
     }
   }
 
+  public async postStatus(token: string, status: StatusDto): Promise<void> {
+    const request: PostStatusRequest = {
+      token: token,
+      status: status,
+    };
+
+    try {
+      const response = await this.clientCommunicator.doPost<
+        PostStatusRequest,
+        PostStatusResponse
+      >(request, "/poststatus");
+
+      if (!response.success) {
+        console.error("PostStatus failed:", response);
+        throw new Error(
+          response.message || "An error occurred while posting the status"
+        );
+      }
+    } catch (error) {
+      if (error instanceof Error) {
+        console.error("Client communicator POST failed:", error.message);
+        throw new Error("Client communicator POST failed: " + error.message);
+      } else {
+        console.error(
+          "Client communicator POST failed with unknown error:",
+          error
+        );
+        throw new Error("Client communicator POST failed with unknown error");
+      }
+    }
+  }
+
+  //
+  // User calls
+  //
   public async register(
     request: Omit<RegisterRequest, "token">
   ): Promise<[User, AuthToken]> {
@@ -350,38 +345,6 @@ export class ServerFacade {
         console.error("GetUser failed:", response);
         throw new Error(
           response.message || "An error occurred while fetching user data"
-        );
-      }
-    } catch (error) {
-      if (error instanceof Error) {
-        console.error("Client communicator POST failed:", error.message);
-        throw new Error("Client communicator POST failed: " + error.message);
-      } else {
-        console.error(
-          "Client communicator POST failed with unknown error:",
-          error
-        );
-        throw new Error("Client communicator POST failed with unknown error");
-      }
-    }
-  }
-
-  public async postStatus(token: string, status: StatusDto): Promise<void> {
-    const request: PostStatusRequest = {
-      token: token,
-      status: status,
-    };
-
-    try {
-      const response = await this.clientCommunicator.doPost<
-        PostStatusRequest,
-        PostStatusResponse
-      >(request, "/poststatus");
-
-      if (!response.success) {
-        console.error("PostStatus failed:", response);
-        throw new Error(
-          response.message || "An error occurred while posting the status"
         );
       }
     } catch (error) {

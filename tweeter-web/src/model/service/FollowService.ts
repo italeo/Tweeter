@@ -3,6 +3,7 @@ import {
   FakeData,
   PagedUserItemRequest,
   User,
+  UserDto,
 } from "tweeter-shared";
 import { ServerFacade } from "../network/ServerFacade";
 
@@ -42,14 +43,20 @@ export class FollowService {
     return await this.serverFacade.getMoreFollowees(request);
   }
 
-  // From
   public async getIsFollowerStatus(
     authToken: AuthToken,
     user: User,
     selectedUser: User
   ): Promise<boolean> {
-    // TODO: Replace with the result of calling server
-    return FakeData.instance.isFollower();
+    const token = authToken.token;
+    const userDto: UserDto = user.toDto();
+    const selectedUserDto: UserDto = selectedUser.toDto();
+
+    return await this.serverFacade.getIsFollowerStatus(
+      token,
+      userDto,
+      selectedUserDto
+    );
   }
 
   public async getFolloweeCount(
