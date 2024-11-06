@@ -11,6 +11,8 @@ import {
   PagedStatusItemResponse,
   PagedUserItemRequest,
   PagedUserItemResponse,
+  PostStatusRequest,
+  PostStatusResponse,
   RegisterRequest,
   RegisterResponse,
   Status,
@@ -348,6 +350,38 @@ export class ServerFacade {
         console.error("GetUser failed:", response);
         throw new Error(
           response.message || "An error occurred while fetching user data"
+        );
+      }
+    } catch (error) {
+      if (error instanceof Error) {
+        console.error("Client communicator POST failed:", error.message);
+        throw new Error("Client communicator POST failed: " + error.message);
+      } else {
+        console.error(
+          "Client communicator POST failed with unknown error:",
+          error
+        );
+        throw new Error("Client communicator POST failed with unknown error");
+      }
+    }
+  }
+
+  public async postStatus(token: string, status: StatusDto): Promise<void> {
+    const request: PostStatusRequest = {
+      token: token,
+      status: status,
+    };
+
+    try {
+      const response = await this.clientCommunicator.doPost<
+        PostStatusRequest,
+        PostStatusResponse
+      >(request, "/poststatus");
+
+      if (!response.success) {
+        console.error("PostStatus failed:", response);
+        throw new Error(
+          response.message || "An error occurred while posting the status"
         );
       }
     } catch (error) {

@@ -3,6 +3,8 @@ import {
   Status,
   FakeData,
   PagedStatusItemRequest,
+  PostStatusRequest,
+  StatusDto,
 } from "tweeter-shared";
 import { ServerFacade } from "../network/ServerFacade";
 
@@ -45,9 +47,11 @@ export class StatusService {
     authToken: AuthToken,
     newStatus: Status
   ): Promise<void> {
+    const request: PostStatusRequest = {
+      token: authToken.token,
+      status: newStatus.toDto() as StatusDto,
+    };
     // Pause so we can see the logging out message. Remove when connected to the server
-    await new Promise((f) => setTimeout(f, 2000));
-
-    // TODO: Call the server to post the status
+    await this.serverFacade.postStatus(request.token, request.status);
   }
 }

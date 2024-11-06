@@ -25,6 +25,7 @@ export type { RegisterRequest } from "./model/net/request/RegisterRequest";
 export type { LoginRequest } from "./model/net/request/LoginRequest";
 export type { LogoutRequest } from "./model/net/request/LogoutRequest";
 export type { GetUserRequest } from "./model/net/request/GetUserRequest";
+export type { PostStatusRequest } from "./model/net/request/PostStatusRequest";
 
 //
 // Responses
@@ -36,6 +37,7 @@ export type { RegisterResponse } from "./model/net/response/RegisterResponse";
 export type { LoginResponse } from "./model/net/response/LoginResponse";
 export type { LogoutResponse } from "./model/net/response/LogoutResponse";
 export type { GetUserResponse } from "./model/net/response/GetUserResponse";
+export type { PostStatusResponse } from "./model/net/response/PostStatusResponse";
 
 //
 // others
