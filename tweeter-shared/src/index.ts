@@ -24,6 +24,7 @@ export type { PagedStatusItemRequest } from "./model/net/request/PagedStatusItem
 export type { RegisterRequest } from "./model/net/request/RegisterRequest";
 export type { LoginRequest } from "./model/net/request/LoginRequest";
 export type { LogoutRequest } from "./model/net/request/LogoutRequest";
+export type { GetUserRequest } from "./model/net/request/GetUserRequest";
 
 //
 // Responses
@@ -34,6 +35,7 @@ export type { PagedStatusItemResponse } from "./model/net/response/PagedStatusIt
 export type { RegisterResponse } from "./model/net/response/RegisterResponse";
 export type { LoginResponse } from "./model/net/response/LoginResponse";
 export type { LogoutResponse } from "./model/net/response/LogoutResponse";
+export type { GetUserResponse } from "./model/net/response/GetUserResponse";
 
 //
 // others

@@ -1,6 +1,8 @@
 import {
   AuthToken,
   AuthTokenDto,
+  GetUserRequest,
+  GetUserResponse,
   LoginRequest,
   LoginResponse,
   LogoutRequest,
@@ -310,6 +312,43 @@ export class ServerFacade {
       if (!response.success) {
         console.error("Logout failed:", response);
         throw new Error(response.message || "An error occurred during logout");
+      }
+    } catch (error) {
+      if (error instanceof Error) {
+        console.error("Client communicator POST failed:", error.message);
+        throw new Error("Client communicator POST failed: " + error.message);
+      } else {
+        console.error(
+          "Client communicator POST failed with unknown error:",
+          error
+        );
+        throw new Error("Client communicator POST failed with unknown error");
+      }
+    }
+  }
+
+  public async getUser(
+    authToken: AuthToken,
+    alias: string
+  ): Promise<User | null> {
+    const request: GetUserRequest = {
+      token: authToken.token,
+      alias: alias,
+    };
+
+    try {
+      const response = await this.clientCommunicator.doPost<
+        GetUserRequest,
+        GetUserResponse
+      >(request, "/user");
+
+      if (response.success) {
+        return response.user ? User.fromDto(response.user as UserDto) : null;
+      } else {
+        console.error("GetUser failed:", response);
+        throw new Error(
+          response.message || "An error occurred while fetching user data"
+        );
       }
     } catch (error) {
       if (error instanceof Error) {
