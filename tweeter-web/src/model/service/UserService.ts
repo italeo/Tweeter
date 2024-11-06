@@ -57,7 +57,5 @@ export class UserService {
 
   public async logout(authToken: AuthToken): Promise<void> {
     await this.serverFacade.logout(authToken);
-    //console.log("Logout successful");
-    //await new Promise((res) => setTimeout(res, 1000));
   }
 }
