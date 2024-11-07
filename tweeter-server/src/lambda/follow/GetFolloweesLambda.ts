@@ -1,6 +1,6 @@
 import { PagedUserItemRequest, PagedUserItemResponse } from "tweeter-shared";
 import { FollowService } from "../../model/service/FollowService";
-import { handlePagedUserRequest } from "./FollowingUtils";
+import { handlePagedUserRequest } from "./PagedFollowUtil";
 
 // Function that will be called by API Gateway when user makes a 'request' to get more followees
 export const handler = async (
