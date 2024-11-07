@@ -5,6 +5,7 @@ export const handler = async (
   request: UnfollowRequest
 ): Promise<UnfollowResponse> => {
   const followService = new FollowService();
+
   const [followerCount, followeeCount] = await followService.unfollow(
     request.token,
     request.userToUnfollow
