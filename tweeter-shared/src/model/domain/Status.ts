@@ -13,7 +13,7 @@ export class Status {
     this._post = post;
     this._user = user;
     this._timestamp = timestamp;
-    this._segments = this.getPostSegments(post);
+    this._segments = this.getPostSegments(post); // won't be storing in the DB
   }
 
   private getPostSegments(post: string): PostSegment[] {
@@ -284,7 +284,6 @@ export class Status {
       post: this._post,
       user: this._user.toDto(),
       timestamp: this._timestamp,
-      segments: this._segments.map((segment) => segment.toDto()),
     };
   }
 
@@ -304,11 +303,7 @@ export class Status {
       throw new Error("Invalid UserDto in StatusDto");
     }
 
-    const status = new Status(dto.post, user, dto.timestamp);
-    status._segments = dto.segments.map((segmentDto) =>
-      PostSegment.fromDto(segmentDto)
-    );
-    return status;
+    return new Status(dto.post, user, dto.timestamp);
   }
   // -----------------------------------------------------------
 }
