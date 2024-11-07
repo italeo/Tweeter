@@ -241,7 +241,7 @@ export class ServerFacade {
     token: string,
     userToUnfollow: UserDto
   ): Promise<[number, number]> {
-    const request = { token, userToUnfollow };
+    const request: UnfollowRequest = { token, userToUnfollow };
 
     try {
       const response = await this.clientCommunicator.doPost<
