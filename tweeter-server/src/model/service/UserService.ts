@@ -1,6 +1,5 @@
 import { Buffer } from "buffer";
 import {
-  User,
   AuthToken,
   FakeData,
   AuthTokenDto,
