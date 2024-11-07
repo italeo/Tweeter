@@ -15,6 +15,6 @@ export const handler = async (
     success: true,
     message: null,
     user: user,
-    authToken: authToken,
+    authToken: authToken, // ask TA
   };
 };
