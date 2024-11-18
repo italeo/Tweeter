@@ -3,6 +3,7 @@ import {
   CreateTableCommand,
   ScalarAttributeType,
   KeyType,
+  ProjectionType,
 } from "@aws-sdk/client-dynamodb";
 
 const createFollowersTable = async () => {
@@ -31,7 +32,7 @@ const createFollowersTable = async () => {
           { AttributeName: "followerAlias", KeyType: "HASH" as KeyType },
           { AttributeName: "followeeAlias", KeyType: "RANGE" as KeyType },
         ],
-        Projection: { ProjectionType: "ALL" },
+        Projection: { ProjectionType: "ALL" as ProjectionType },
         ProvisionedThroughput: {
           ReadCapacityUnits: 5,
           WriteCapacityUnits: 5,
