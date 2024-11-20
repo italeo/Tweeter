@@ -1,20 +1,18 @@
 import {
   DeleteItemCommand,
-  DynamoDBClient,
   PutItemCommand,
   QueryCommand,
   QueryCommandInput,
 } from "@aws-sdk/client-dynamodb";
 import { StatusDAO } from "../interfaces/StatusDAO";
 import { Status, User } from "tweeter-shared";
-import { DynamoUserDAO } from "./DynamoUserDAO";
+import { DynamoBaseDAO } from "./DynamoBaseDAO";
 
-export class DynamoStatusDAO implements StatusDAO {
-  private readonly client: DynamoDBClient;
+export class DynamoStatusDAO extends DynamoBaseDAO implements StatusDAO {
   private readonly tableName: string = "Statuses";
 
   public constructor() {
-    this.client = new DynamoDBClient({ region: "us-west-2" });
+    super();
   }
 
   // Create a new status
@@ -40,7 +38,6 @@ export class DynamoStatusDAO implements StatusDAO {
     }
   }
 
-  // Get statuses by a user (story)
   async getStatusesByUser(
     userAlias: string,
     limit: number,
@@ -58,20 +55,20 @@ export class DynamoStatusDAO implements StatusDAO {
 
     try {
       const data = await this.client.send(new QueryCommand(params));
-      const statuses: Status[] =
-        data.Items?.map(
-          (item) =>
-            new Status(
-              item.post?.S || "No content",
-              new User(
-                "Unknown", // Placeholder for firstName
-                "Unknown", // Placeholder for lastName
-                item.alias?.S || "unknown_alias", // Alias from table
-                "https://default-image.url" // Placeholder for imageUrl
-              ),
-              parseInt(item.timestamp?.N || "0")
-            )
-        ) || [];
+
+      const statuses: Status[] = await Promise.all(
+        (data.Items || []).map(async (item) => {
+          const user = await this.fetchUserDetails(
+            item.alias?.S || "unknown_alias"
+          );
+          return new Status(
+            item.post?.S || "No content",
+            user,
+            parseInt(item.timestamp?.N || "0")
+          );
+        })
+      );
+
       return { statuses, lastKey: data.LastEvaluatedKey };
     } catch (error) {
       console.error(`Error getting statuses for user ${userAlias}:`, error);
@@ -96,17 +93,18 @@ export class DynamoStatusDAO implements StatusDAO {
 
     try {
       const data = await this.client.send(new QueryCommand(params));
-      const userDAO = new DynamoUserDAO();
 
       const statuses: Status[] = await Promise.all(
-        data.Items?.map(async (item) => {
-          const user = await userDAO.getUserByAlias(item.alias?.S || "unknown");
+        (data.Items || []).map(async (item) => {
+          const user = await this.fetchUserDetails(
+            item.authorAlias?.S || "unknown_alias"
+          );
           return new Status(
-            item.post?.S || "",
-            user || new User("Unknown", "Unknown", "unknown_alias", ""),
+            item.post?.S || "No content",
+            user,
             parseInt(item.timestamp?.N || "0")
           );
-        }) || []
+        })
       );
 
       return { statuses, lastKey: data.LastEvaluatedKey };
@@ -116,20 +114,22 @@ export class DynamoStatusDAO implements StatusDAO {
     }
   }
 
-  // Delete a status
-  async deleteStatus(statusId: string): Promise<void> {
+  async deleteStatus(userAlias: string, timestamp: number): Promise<void> {
     const params = {
       TableName: this.tableName,
       Key: {
-        id: { S: statusId },
+        alias: { S: userAlias },
+        timestamp: { N: timestamp.toString() },
       },
     };
 
     try {
       await this.client.send(new DeleteItemCommand(params));
-      console.log(`Status with ID ${statusId} deleted successfully!`);
+      console.log(
+        `Status for user ${userAlias} with timestamp ${timestamp} deleted successfully!`
+      );
     } catch (error) {
-      console.error(`Error deleting status with ID ${statusId}:`, error);
+      console.error(`Error deleting status for user ${userAlias}:`, error);
       throw error;
     }
   }

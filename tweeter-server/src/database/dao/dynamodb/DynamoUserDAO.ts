@@ -1,19 +1,17 @@
 import {
   DeleteItemCommand,
-  DynamoDBClient,
-  GetItemCommand,
   PutItemCommand,
   UpdateItemCommand,
 } from "@aws-sdk/client-dynamodb";
 import { UserDAO } from "../interfaces/UserDAO";
 import { User } from "tweeter-shared";
+import { DynamoBaseDAO } from "./DynamoBaseDAO";
 
-export class DynamoUserDAO implements UserDAO {
-  private readonly client: DynamoDBClient;
+export class DynamoUserDAO extends DynamoBaseDAO implements UserDAO {
   private readonly tableName: string = "Users";
 
   public constructor() {
-    this.client = new DynamoDBClient({ region: "us-west-2" });
+    super();
   }
 
   // Adds a User to the Users table
@@ -39,28 +37,12 @@ export class DynamoUserDAO implements UserDAO {
 
   // Gets/retrieves a User by their alias
   async getUserByAlias(alias: string): Promise<User | null> {
-    const params = {
-      TableName: this.tableName,
-      Key: {
-        alias: { S: alias },
-      },
-    };
-
     try {
-      const data = await this.client.send(new GetItemCommand(params));
-      if (data.Item) {
-        return new User(
-          data.Item.firstName?.S || "Unknown",
-          data.Item.lastName?.S || "Unknown",
-          data.Item.alias?.S || "unknown_alias",
-          data.Item.imageUrl?.S || "https://default-image.url"
-        );
-      } else {
-        return null;
-      }
+      const user = await this.fetchUserDetails(alias);
+      return user;
     } catch (error) {
       console.error(`Error retrieving user with alias ${alias}:`, error);
-      throw error;
+      return null;
     }
   }
 

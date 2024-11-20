@@ -4,7 +4,7 @@ export interface FeedDAO {
   addStatusToFeed(followerAliases: string[], status: Status): Promise<void>;
   removeStatusFromFeed(
     followerAliases: string[],
-    statusId: string
+    timestamp: number
   ): Promise<void>;
   getFeedForUser(
     userAlias: string,

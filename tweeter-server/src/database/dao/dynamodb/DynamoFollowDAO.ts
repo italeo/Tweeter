@@ -1,19 +1,19 @@
 import {
-  DeleteItemCommand,
-  DynamoDBClient,
-  PutItemCommand,
+  BatchWriteItemCommand,
   QueryCommand,
   QueryCommandInput,
+  PutItemCommand,
+  DeleteItemCommand,
 } from "@aws-sdk/client-dynamodb";
 import { FollowDAO } from "../interfaces/FollowDAO";
 import { UserDto } from "tweeter-shared";
+import { DynamoBaseDAO } from "./DynamoBaseDAO";
 
-export class DynamoFollowDAO implements FollowDAO {
-  private readonly client: DynamoDBClient;
+export class DynamoFollowDAO extends DynamoBaseDAO implements FollowDAO {
   private readonly tableName: string = "Followers";
 
   public constructor() {
-    this.client = new DynamoDBClient({ region: "us-west-2" });
+    super();
   }
 
   // Follow a user
@@ -94,16 +94,21 @@ export class DynamoFollowDAO implements FollowDAO {
 
     try {
       const data = await this.client.send(new QueryCommand(params));
-      const followers: UserDto[] =
-        data.Items?.map((item) => ({
-          alias: item.followerAlias?.S || "Unknown",
-          firstName: "Unknown",
-          lastName: "Unknown",
-          imageUrl: "https://default-image.url",
-        })) || [];
+      const followers: UserDto[] = await Promise.all(
+        data.Items?.map(async (item) => {
+          const user = await this.fetchUserDetails(
+            item.followerAlias?.S || "unknown_alias"
+          );
+          return {
+            alias: user.alias,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            imageUrl: user.imageUrl,
+          };
+        }) || []
+      );
 
       const hasMore = !!data.LastEvaluatedKey;
-
       return { followers, hasMore };
     } catch (error) {
       console.error(`Error retrieving followers for ${userAlias}:`, error);
@@ -134,15 +139,21 @@ export class DynamoFollowDAO implements FollowDAO {
 
     try {
       const data = await this.client.send(new QueryCommand(params));
-      const followees: UserDto[] =
-        data.Items?.map((item) => ({
-          alias: item.followeeAlias?.S || "Unknown",
-          firstName: "Unknown",
-          lastName: "Unknown",
-          imageUrl: "https://default-image.url",
-        })) || [];
-      const hasMore = !!data.LastEvaluatedKey;
+      const followees: UserDto[] = await Promise.all(
+        data.Items?.map(async (item) => {
+          const user = await this.fetchUserDetails(
+            item.followeeAlias?.S || "unknown_alias"
+          );
+          return {
+            alias: user.alias,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            imageUrl: user.imageUrl,
+          };
+        }) || []
+      );
 
+      const hasMore = !!data.LastEvaluatedKey;
       return { followees, hasMore };
     } catch (error) {
       console.error(`Error retrieving followees for ${userAlias}:`, error);
@@ -181,7 +192,7 @@ export class DynamoFollowDAO implements FollowDAO {
   async getFollowerCount(userAlias: string): Promise<number> {
     const params: QueryCommandInput = {
       TableName: this.tableName,
-      IndexName: "FollowerIndex", // Assuming a GSI on followerAlias
+      IndexName: "FollowerIndex",
       KeyConditionExpression: "followeeAlias = :followeeAlias",
       ExpressionAttributeValues: {
         ":followeeAlias": { S: userAlias },

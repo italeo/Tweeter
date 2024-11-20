@@ -12,5 +12,5 @@ export interface StatusDAO {
     limit: number,
     lastKey?: any
   ): Promise<{ statuses: Status[]; lastKey?: any }>;
-  deleteStatus(statusId: string): Promise<void>;
+  deleteStatus(userAlias: string, timestamp: number): Promise<void>;
 }
