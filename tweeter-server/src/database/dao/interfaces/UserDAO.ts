@@ -1,4 +1,3 @@
-import { promises } from "dns";
 import { User } from "tweeter-shared";
 
 export interface UserDAO {

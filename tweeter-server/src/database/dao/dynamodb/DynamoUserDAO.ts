@@ -6,12 +6,15 @@ import {
 import { UserDAO } from "../interfaces/UserDAO";
 import { User } from "tweeter-shared";
 import { DynamoBaseDAO } from "./DynamoBaseDAO";
+import { DynamoS3ProfileImageDAO } from "../s3/DynamoS3ProfileImageDAO";
 
 export class DynamoUserDAO extends DynamoBaseDAO implements UserDAO {
   private readonly tableName: string = "Users";
+  private profileImageDAO: DynamoS3ProfileImageDAO;
 
-  public constructor() {
+  public constructor(profileImageDAO: DynamoS3ProfileImageDAO) {
     super();
+    this.profileImageDAO = profileImageDAO;
   }
 
   // Adds a User to the Users table
@@ -31,6 +34,40 @@ export class DynamoUserDAO extends DynamoBaseDAO implements UserDAO {
       console.log(`User ${user.alias} added successfully!`);
     } catch (error) {
       console.error(`Error adding user ${user.alias}:`, error);
+      throw error;
+    }
+  }
+
+  async updateProfileImage(
+    userAlias: string,
+    fileBuffer: Buffer,
+    fileType: string
+  ): Promise<void> {
+    const imageUrl = await this.profileImageDAO.uploadProfileImage(
+      userAlias,
+      fileBuffer,
+      fileType
+    );
+
+    const params = {
+      TableName: this.tableName,
+      Key: {
+        alias: { S: userAlias },
+      },
+      UpdateExpression: "SET imageUrl = :imageUrl",
+      ExpressionAttributeValues: {
+        ":imageUrl": { S: imageUrl },
+      },
+    };
+
+    try {
+      await this.client.send(new UpdateItemCommand(params));
+      console.log(`Profile image URL updated for user ${userAlias}`);
+    } catch (error) {
+      console.error(
+        `Error updating profile image URL for user ${userAlias}:`,
+        error
+      );
       throw error;
     }
   }
