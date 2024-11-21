@@ -76,44 +76,6 @@ export class DynamoStatusDAO extends DynamoBaseDAO implements StatusDAO {
     }
   }
 
-  async getFeedForUser(
-    userAlias: string,
-    limit: number,
-    lastKey?: any
-  ): Promise<{ statuses: Status[]; lastKey?: any }> {
-    const params: QueryCommandInput = {
-      TableName: "Feed",
-      KeyConditionExpression: "alias = :alias",
-      ExpressionAttributeValues: {
-        ":alias": { S: userAlias },
-      },
-      Limit: limit,
-      ExclusiveStartKey: lastKey,
-    };
-
-    try {
-      const data = await this.client.send(new QueryCommand(params));
-
-      const statuses: Status[] = await Promise.all(
-        (data.Items || []).map(async (item) => {
-          const user = await this.fetchUserDetails(
-            item.authorAlias?.S || "unknown_alias"
-          );
-          return new Status(
-            item.post?.S || "No content",
-            user,
-            parseInt(item.timestamp?.N || "0")
-          );
-        })
-      );
-
-      return { statuses, lastKey: data.LastEvaluatedKey };
-    } catch (error) {
-      console.error(`Error getting feed for user ${userAlias}:`, error);
-      throw error;
-    }
-  }
-
   async deleteStatus(userAlias: string, timestamp: number): Promise<void> {
     const params = {
       TableName: this.tableName,

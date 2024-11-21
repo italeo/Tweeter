@@ -7,10 +7,5 @@ export interface StatusDAO {
     limit: number,
     lastKey?: any
   ): Promise<{ statuses: Status[]; lastKey?: any }>;
-  getFeedForUser(
-    userAlias: string,
-    limit: number,
-    lastKey?: any
-  ): Promise<{ statuses: Status[]; lastKey?: any }>;
   deleteStatus(userAlias: string, timestamp: number): Promise<void>;
 }
