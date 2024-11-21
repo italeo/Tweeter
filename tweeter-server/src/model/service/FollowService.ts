@@ -1,6 +1,17 @@
 import { AuthToken, FakeData, User, UserDto } from "tweeter-shared";
+import { UserDAO } from "../../database/dao/interfaces/UserDAO";
+import { FollowDAO } from "../../database/dao/interfaces/FollowDAO";
 
 export class FollowService {
+  private followDAO: FollowDAO;
+  private userDAO: UserDAO;
+
+  // Inject DAOs into the service class
+  public constructor(followDAO: FollowDAO, userDAO: UserDAO) {
+    this.followDAO = followDAO;
+    this.userDAO = userDAO;
+  }
+
   public async loadMoreFollowers(
     token: string,
     userAlias: string,
@@ -8,7 +19,15 @@ export class FollowService {
     lastItem: UserDto | null
   ): Promise<[UserDto[], boolean]> {
     // TODO: Replace with the result of calling server
-    return this.getFakeData(lastItem, pageSize, userAlias);
+    const safeLastItem = lastItem ?? undefined;
+
+    const { followers, hasMore } = await this.followDAO.getFollowers(
+      userAlias,
+      pageSize,
+      safeLastItem
+    );
+    return [followers, hasMore];
+    // return this.getFakeData(lastItem, pageSize, userAlias);
   }
 
   public async loadMoreFollowees(
@@ -18,7 +37,16 @@ export class FollowService {
     lastItem: UserDto | null
   ): Promise<[UserDto[], boolean]> {
     // TODO: Replace with the result of calling server
-    return this.getFakeData(lastItem, pageSize, userAlias);
+    const safeLastItem = lastItem ?? undefined;
+
+    const { followees, hasMore } = await this.followDAO.getFollowees(
+      userAlias,
+      pageSize,
+      safeLastItem
+    );
+    return [followees, hasMore];
+
+    // return this.getFakeData(lastItem, pageSize, userAlias);
   }
   // ---- working on this --------
   public async getIsFollowerStatus(
@@ -27,7 +55,12 @@ export class FollowService {
     selectedUser: UserDto
   ): Promise<boolean> {
     // TODO: Replace with the result of calling server
-    return FakeData.instance.isFollower();
+    const isFollower = await this.followDAO.isUserFollowing(
+      user.alias,
+      selectedUser.alias
+    );
+    return isFollower;
+    // return FakeData.instance.isFollower();
   }
 
   public async getFolloweeCount(
@@ -35,7 +68,9 @@ export class FollowService {
     userDto: UserDto
   ): Promise<number> {
     // TODO: Replace with the result of calling server
-    return FakeData.instance.getFolloweeCount(userDto.alias);
+    const followeeCount = await this.followDAO.getFolloweeCount(userDto.alias);
+    return followeeCount;
+    // return FakeData.instance.getFolloweeCount(userDto.alias);
   }
 
   public async getFollowerCount(
@@ -43,7 +78,9 @@ export class FollowService {
     userDto: UserDto
   ): Promise<number> {
     // TODO: Replace with the result of calling server
-    return FakeData.instance.getFollowerCount(userDto.alias);
+    const followerCount = await this.followDAO.getFollowerCount(userDto.alias);
+    return followerCount;
+    // return FakeData.instance.getFollowerCount(userDto.alias);
   }
 
   public async follow(
@@ -51,10 +88,11 @@ export class FollowService {
     userToFollowDto: UserDto
   ): Promise<[followerCount: number, followeeCount: number]> {
     // Pause so we can see the follow message. Remove when connected to the server
-    await new Promise((f) => setTimeout(f, 2000));
+    await this.followDAO.followUser(token, userToFollowDto.alias);
 
-    // TODO: Call the server
+    // await new Promise((f) => setTimeout(f, 2000));
 
+    // Retrieve updated counts
     const followerCount = await this.getFollowerCount(token, userToFollowDto);
     const followeeCount = await this.getFolloweeCount(token, userToFollowDto);
 
@@ -66,7 +104,8 @@ export class FollowService {
     userToUnfollowDto: UserDto
   ): Promise<[followerCount: number, followeeCount: number]> {
     // Pause so we can see the unfollow message. Remove when connected to the server
-    await new Promise((f) => setTimeout(f, 2000));
+    // await new Promise((f) => setTimeout(f, 2000));
+    await this.followDAO.unfollowUser(token, userToUnfollowDto.alias);
 
     // TODO: Call the server
 
@@ -74,19 +113,5 @@ export class FollowService {
     const followeeCount = await this.getFolloweeCount(token, userToUnfollowDto);
 
     return [followerCount, followeeCount];
-  }
-
-  private async getFakeData(
-    lastItem: UserDto | null,
-    pageSize: number,
-    userAlias: string
-  ): Promise<[UserDto[], boolean]> {
-    const [items, hasMore] = FakeData.instance.getPageOfUsers(
-      User.fromDto(lastItem),
-      pageSize,
-      userAlias
-    );
-    const dtos = items.map((user) => user.dto);
-    return [dtos, hasMore];
   }
 }
