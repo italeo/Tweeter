@@ -10,12 +10,14 @@ const createUsersTable = async () => {
 
   const params = {
     TableName: "Users",
-    KeySchema: [{ AttributeName: "alias", KeyType: "HASH" as KeyType }],
+    KeySchema: [
+      { AttributeName: "alias", KeyType: "HASH" as KeyType }, // Primary key
+    ],
     AttributeDefinitions: [
-      { AttributeName: "alias", AttributeType: "S" as ScalarAttributeType },
+      { AttributeName: "alias", AttributeType: "S" as ScalarAttributeType }, // Corresponding attribute definition
     ],
     ProvisionedThroughput: {
-      ReadCapacityUnits: 5,
+      ReadCapacityUnits: 5, // Adjust based on requirements
       WriteCapacityUnits: 5,
     },
   };

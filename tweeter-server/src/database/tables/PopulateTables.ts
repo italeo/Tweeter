@@ -1,5 +1,6 @@
 import { DynamoDBClient, PutItemCommand } from "@aws-sdk/client-dynamodb";
 import { AuthToken, FakeData, Status, User } from "tweeter-shared";
+import bcrypt from "bcryptjs";
 
 const client = new DynamoDBClient({ region: "us-west-2" });
 
@@ -7,6 +8,8 @@ const client = new DynamoDBClient({ region: "us-west-2" });
 // Add Users
 //
 const addUser = async (user: User) => {
+  const hashedPassword = await bcrypt.hash(user.password, 10);
+
   const params = {
     TableName: "Users",
     Item: {
@@ -14,6 +17,7 @@ const addUser = async (user: User) => {
       firstName: { S: user.firstName },
       lastName: { S: user.lastName },
       imageUrl: { S: user.imageUrl },
+      passwordHash: { S: hashedPassword },
     },
   };
 
