@@ -15,28 +15,28 @@ export class FakeData {
   }
 
   private readonly allUsers: User[] = [
-    new User("Allen", "Anderson", "@allen", MALE_IMAGE_URL),
-    new User("Amy", "Ames", "@amy", FEMALE_IMAGE_URL),
-    new User("Bob", "Bobson", "@bob", MALE_IMAGE_URL),
-    new User("Bonnie", "Beatty", "@bonnie", FEMALE_IMAGE_URL),
-    new User("Chris", "Colston", "@chris", MALE_IMAGE_URL),
-    new User("Cindy", "Coats", "@cindy", FEMALE_IMAGE_URL),
-    new User("Dan", "Donaldson", "@dan", MALE_IMAGE_URL),
-    new User("Dee", "Dempsey", "@dee", FEMALE_IMAGE_URL),
-    new User("Elliott", "Enderson", "@elliott", MALE_IMAGE_URL),
-    new User("Elizabeth", "Engle", "@elizabeth", FEMALE_IMAGE_URL),
-    new User("Frank", "Frandson", "@frank", MALE_IMAGE_URL),
-    new User("Fran", "Franklin", "@fran", FEMALE_IMAGE_URL),
-    new User("Gary", "Gilbert", "@gary", MALE_IMAGE_URL),
-    new User("Giovanna", "Giles", "@giovanna", FEMALE_IMAGE_URL),
-    new User("Henry", "Henderson", "@henry", MALE_IMAGE_URL),
-    new User("Helen", "Hopwell", "@helen", FEMALE_IMAGE_URL),
-    new User("Igor", "Isaacson", "@igor", MALE_IMAGE_URL),
-    new User("Isabel", "Isaacson", "@isabel", FEMALE_IMAGE_URL),
-    new User("Justin", "Jones", "@justin", MALE_IMAGE_URL),
-    new User("Jill", "Johnson", "@jill", FEMALE_IMAGE_URL),
-    new User("Kent", "Knudson", "@kent", MALE_IMAGE_URL),
-    new User("Kathy", "Kunzler", "@kathy", FEMALE_IMAGE_URL),
+    new User("Allen", "Anderson", "@allen", MALE_IMAGE_URL, "password"),
+    new User("Amy", "Ames", "@amy", FEMALE_IMAGE_URL, "password"),
+    new User("Bob", "Bobson", "@bob", MALE_IMAGE_URL, "password"),
+    new User("Bonnie", "Beatty", "@bonnie", FEMALE_IMAGE_URL, "password"),
+    new User("Chris", "Colston", "@chris", MALE_IMAGE_URL, "password"),
+    new User("Cindy", "Coats", "@cindy", FEMALE_IMAGE_URL, "password"),
+    new User("Dan", "Donaldson", "@dan", MALE_IMAGE_URL, "password"),
+    new User("Dee", "Dempsey", "@dee", FEMALE_IMAGE_URL, "password"),
+    new User("Elliott", "Enderson", "@elliott", MALE_IMAGE_URL, "password"),
+    new User("Elizabeth", "Engle", "@elizabeth", FEMALE_IMAGE_URL, "password"),
+    new User("Frank", "Frandson", "@frank", MALE_IMAGE_URL, "password"),
+    new User("Fran", "Franklin", "@fran", FEMALE_IMAGE_URL, "password"),
+    new User("Gary", "Gilbert", "@gary", MALE_IMAGE_URL, "password"),
+    new User("Giovanna", "Giles", "@giovanna", FEMALE_IMAGE_URL, "password"),
+    new User("Henry", "Henderson", "@henry", MALE_IMAGE_URL, "password"),
+    new User("Helen", "Hopwell", "@helen", FEMALE_IMAGE_URL, "password"),
+    new User("Igor", "Isaacson", "@igor", MALE_IMAGE_URL, "password"),
+    new User("Isabel", "Isaacson", "@isabel", FEMALE_IMAGE_URL, "password"),
+    new User("Justin", "Jones", "@justin", MALE_IMAGE_URL, "password"),
+    new User("Jill", "Johnson", "@jill", FEMALE_IMAGE_URL, "password"),
+    new User("Kent", "Knudson", "@kent", MALE_IMAGE_URL, "password"),
+    new User("Kathy", "Kunzler", "@kathy", FEMALE_IMAGE_URL, "password"),
   ];
 
   // Allows mocking of fake users
@@ -235,13 +235,13 @@ export class FakeData {
    * Returns a followers count for the user, as a random number between 1 and 10.
    */
   public getFollowerCount(userAlias: string): number | PromiseLike<number> {
-    return Math.floor(Math.random() * 10) + 1
+    return Math.floor(Math.random() * 10) + 1;
   }
 
   /**
    * Returns a followees count for the user, as a random number between 1 and 10.
    */
   public getFolloweeCount(userAlias: string): number | PromiseLike<number> {
-    return Math.floor(Math.random() * 10) + 1
+    return Math.floor(Math.random() * 10) + 1;
   }
 }

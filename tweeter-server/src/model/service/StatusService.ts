@@ -27,14 +27,17 @@ export class StatusService {
     // TODO: Replace with the result of calling server
     const safeLastItem = lastItem ? Status.fromDto(lastItem) : undefined;
 
-    const { statuses, lastKey } = await this.statusDAO.getStatusesByUser(
-      userAlias,
-      pageSize,
-      safeLastItem
-    );
-
-    const dtos = statuses.map((status) => status.toDto());
-    return [dtos, !!lastKey];
+    try {
+      const { statuses, lastKey } = await this.statusDAO.getStatusesByUser(
+        userAlias,
+        pageSize,
+        safeLastItem
+      );
+      const dtos = statuses.map((status) => status.toDto());
+      return [dtos, !!lastKey];
+    } catch (err) {
+      throw new Error("Error loading story items.");
+    }
     // return this.getFakeData(lastItem, pageSize);
   }
 
@@ -49,15 +52,18 @@ export class StatusService {
       ? Status.fromDto(lastItem) || undefined
       : undefined;
     // Call the DAO method with a properly typed `safeLastItem`
-    const { statuses, hasMore } = await this.feedDAO.getFeedForUser(
-      userAlias,
-      pageSize,
-      safeLastItem
-    );
+    try {
+      const { statuses, hasMore } = await this.feedDAO.getFeedForUser(
+        userAlias,
+        pageSize,
+        safeLastItem
+      );
 
-    // Map the results to DTOs for returning to the client
-    const dtos = statuses.map((status) => status.toDto());
-    return [dtos, hasMore];
+      const dtos = statuses.map((status) => status.toDto());
+      return [dtos, hasMore];
+    } catch (err) {
+      throw new Error("Error loading feed items.");
+    }
     // return this.getFakeData(lastItem, pageSize);
   }
 
@@ -73,17 +79,24 @@ export class StatusService {
     }
 
     // Save the status to the user's story
-    await this.statusDAO.createStatus(status);
+    try {
+      await this.statusDAO.createStatus(status);
 
-    // Update the feed of the user's followers
-    const followerAliases = await this.getFollowerAliases(status.user.alias);
-    await this.feedDAO.addStatusToFeed(followerAliases, status);
+      const followerAliases = await this.getFollowerAliases(status.user.alias);
+      await this.feedDAO.addStatusToFeed(followerAliases, status);
+    } catch (err) {
+      throw new Error("Error posting status.");
+    }
   }
 
   // ------------ Helper function --------------------------------
   private async getFollowerAliases(userAlias: string): Promise<string[]> {
-    const followers = await this.followDAO.getFollowers(userAlias, 10000);
-    return followers.followers.map((follower) => follower.alias);
+    try {
+      const followers = await this.followDAO.getFollowers(userAlias, 10000);
+      return followers.followers.map((follower) => follower.alias);
+    } catch (err) {
+      throw new Error("Error retrieving follower aliases.");
+    }
   }
   // ---------------------------------------------------------------
 }

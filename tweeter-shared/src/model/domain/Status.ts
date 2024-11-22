@@ -253,6 +253,7 @@ export class Status {
           _lastName: string;
           _alias: string;
           _imageUrl: string;
+          _password?: string;
         };
         _timestamp: number;
         _segments: PostSegment[];
@@ -263,7 +264,8 @@ export class Status {
           jsonObject._user._firstName,
           jsonObject._user._lastName,
           jsonObject._user._alias,
-          jsonObject._user._imageUrl
+          jsonObject._user._imageUrl,
+          jsonObject._user._password || ""
         ),
         jsonObject._timestamp
       );

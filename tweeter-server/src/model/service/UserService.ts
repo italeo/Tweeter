@@ -58,34 +58,57 @@ export class UserService {
     // Not neded now, but will be needed when you make the request to the server in milestone 3
     const imageStringBase64: string =
       Buffer.from(userImageBytes).toString("base64");
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     // const user = FakeData.instance.firstUser;
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const newUser = new User(
+      firstName,
+      lastName,
+      alias,
+      "imageUrlPlaceholder",
+      hashedPassword
+    );
 
-    const newUser = new User(firstName, lastName, alias, "imageUrlPlaceholder");
-    newUser.password = hashedPassword;
-
-    await this.userDAO.createUser(newUser);
+    try {
+      await this.userDAO.createUser(newUser);
+    } catch (err) {
+      throw new Error("Error creating new user.");
+    }
 
     const authToken = AuthToken.Generate();
-    await this.authTokenDAO.createAuthToken(authToken);
+    try {
+      await this.authTokenDAO.createAuthToken(authToken);
+    } catch (err) {
+      throw new Error("Error storing authentication token.");
+    }
 
     return [newUser.toDto(), authToken.toDto()];
   }
 
   public async getUser(token: string, alias: string): Promise<UserDto | null> {
-    const request: GetUserRequest = {
-      token: token,
-      alias: alias,
-    };
+    const authToken = await this.authTokenDAO.getAuthToken(token);
+    if (!authToken) {
+      throw new Error("Invalid or expired authentication token.");
+    }
 
-    const user = FakeData.instance.findUserByAlias(alias);
-    return user ? user.toDto() : null;
+    const user = await this.userDAO.getUserByAlias(alias);
+    if (!user) {
+      throw new Error("User not found.");
+    }
+
+    return user.toDto();
   }
 
   public async logout(authToken: AuthToken): Promise<void> {
     // Pause so we can see the logging out message. Delete when the call to the server is implemented.
-    await new Promise((res) => setTimeout(res, 1000));
+    // await new Promise((res) => setTimeout(res, 1000));
+    try {
+      await this.authTokenDAO.deleteAuthToken(authToken.token);
+    } catch (err) {
+      throw new Error(
+        "Error during logout. Unable to delete authentication token."
+      );
+    }
   }
 }

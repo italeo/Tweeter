@@ -21,12 +21,17 @@ export class FollowService {
     // TODO: Replace with the result of calling server
     const safeLastItem = lastItem ?? undefined;
 
-    const { followers, hasMore } = await this.followDAO.getFollowers(
-      userAlias,
-      pageSize,
-      safeLastItem
-    );
-    return [followers, hasMore];
+    try {
+      const { followers, hasMore } = await this.followDAO.getFollowers(
+        userAlias,
+        pageSize,
+        safeLastItem
+      );
+      return [followers, hasMore];
+    } catch (err) {
+      throw new Error("Error loading followers.");
+    }
+
     // return this.getFakeData(lastItem, pageSize, userAlias);
   }
 
@@ -39,12 +44,16 @@ export class FollowService {
     // TODO: Replace with the result of calling server
     const safeLastItem = lastItem ?? undefined;
 
-    const { followees, hasMore } = await this.followDAO.getFollowees(
-      userAlias,
-      pageSize,
-      safeLastItem
-    );
-    return [followees, hasMore];
+    try {
+      const { followees, hasMore } = await this.followDAO.getFollowees(
+        userAlias,
+        pageSize,
+        safeLastItem
+      );
+      return [followees, hasMore];
+    } catch (err) {
+      throw new Error("Error loading followees.");
+    }
 
     // return this.getFakeData(lastItem, pageSize, userAlias);
   }
@@ -55,11 +64,14 @@ export class FollowService {
     selectedUser: UserDto
   ): Promise<boolean> {
     // TODO: Replace with the result of calling server
-    const isFollower = await this.followDAO.isUserFollowing(
-      user.alias,
-      selectedUser.alias
-    );
-    return isFollower;
+    try {
+      return await this.followDAO.isUserFollowing(
+        user.alias,
+        selectedUser.alias
+      );
+    } catch (err) {
+      throw new Error("Error checking follower status.");
+    }
     // return FakeData.instance.isFollower();
   }
 
@@ -68,8 +80,11 @@ export class FollowService {
     userDto: UserDto
   ): Promise<number> {
     // TODO: Replace with the result of calling server
-    const followeeCount = await this.followDAO.getFolloweeCount(userDto.alias);
-    return followeeCount;
+    try {
+      return await this.followDAO.getFolloweeCount(userDto.alias);
+    } catch (err) {
+      throw new Error("Error retrieving followee count.");
+    }
     // return FakeData.instance.getFolloweeCount(userDto.alias);
   }
 
@@ -78,8 +93,11 @@ export class FollowService {
     userDto: UserDto
   ): Promise<number> {
     // TODO: Replace with the result of calling server
-    const followerCount = await this.followDAO.getFollowerCount(userDto.alias);
-    return followerCount;
+    try {
+      return await this.followDAO.getFollowerCount(userDto.alias);
+    } catch (err) {
+      throw new Error("Error retrieving follower count.");
+    }
     // return FakeData.instance.getFollowerCount(userDto.alias);
   }
 
@@ -88,30 +106,37 @@ export class FollowService {
     userToFollowDto: UserDto
   ): Promise<[followerCount: number, followeeCount: number]> {
     // Pause so we can see the follow message. Remove when connected to the server
-    await this.followDAO.followUser(token, userToFollowDto.alias);
+    try {
+      await this.followDAO.followUser(token, userToFollowDto.alias);
 
-    // await new Promise((f) => setTimeout(f, 2000));
+      const followerCount = await this.getFollowerCount(token, userToFollowDto);
+      const followeeCount = await this.getFolloweeCount(token, userToFollowDto);
 
-    // Retrieve updated counts
-    const followerCount = await this.getFollowerCount(token, userToFollowDto);
-    const followeeCount = await this.getFolloweeCount(token, userToFollowDto);
-
-    return [followerCount, followeeCount];
+      return [followerCount, followeeCount];
+    } catch (err) {
+      throw new Error("Error following user.");
+    }
   }
 
   public async unfollow(
     token: string,
     userToUnfollowDto: UserDto
   ): Promise<[followerCount: number, followeeCount: number]> {
-    // Pause so we can see the unfollow message. Remove when connected to the server
-    // await new Promise((f) => setTimeout(f, 2000));
-    await this.followDAO.unfollowUser(token, userToUnfollowDto.alias);
+    try {
+      await this.followDAO.unfollowUser(token, userToUnfollowDto.alias);
 
-    // TODO: Call the server
+      const followerCount = await this.getFollowerCount(
+        token,
+        userToUnfollowDto
+      );
+      const followeeCount = await this.getFolloweeCount(
+        token,
+        userToUnfollowDto
+      );
 
-    const followerCount = await this.getFollowerCount(token, userToUnfollowDto);
-    const followeeCount = await this.getFolloweeCount(token, userToUnfollowDto);
-
-    return [followerCount, followeeCount];
+      return [followerCount, followeeCount];
+    } catch (err) {
+      throw new Error("Error unfollowing user.");
+    }
   }
 }
