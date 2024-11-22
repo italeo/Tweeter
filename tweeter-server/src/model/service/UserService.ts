@@ -5,21 +5,46 @@ import {
   AuthTokenDto,
   UserDto,
   GetUserRequest,
+  User,
 } from "tweeter-shared";
+import { AuthTokenDAO } from "../../database/dao/interfaces/AuthTokenDAO";
+import { UserDAO } from "../../database/dao/interfaces/UserDAO";
+import bcrypt from "bcryptjs";
 
 export class UserService {
+  private userDAO: UserDAO;
+  private authTokenDAO: AuthTokenDAO;
+
+  // Inject DAOs into the service
+  public constructor(userDAO: UserDAO, authTokenDAO: AuthTokenDAO) {
+    this.userDAO = userDAO;
+    this.authTokenDAO = authTokenDAO;
+  }
+
   public async login(
     alias: string,
     password: string
   ): Promise<[UserDto, AuthTokenDto]> {
     // TODO: Replace with the result of calling the server
-    const user = FakeData.instance.firstUser;
+    // const user = FakeData.instance.firstUser;
 
-    if (user === null) {
+    const user = await this.userDAO.getUserByAlias(alias);
+    if (!user) {
       throw new Error("Invalid alias or password");
     }
 
-    return [user.toDto(), FakeData.instance.authToken.toDto()];
+    const hashedPassword = await this.userDAO.getPasswordHash(alias);
+
+    const isPasswordValid = await bcrypt.compare(password, hashedPassword);
+    if (!isPasswordValid) {
+      throw new Error("Invalid alias or password");
+    }
+
+    // Generate and store a new authentication token
+    const authToken = AuthToken.Generate();
+    await this.authTokenDAO.storeToken(authToken);
+
+    return [user.toDto(), authToken.toDto()];
   }
 
   public async register(
@@ -34,13 +59,19 @@ export class UserService {
     const imageStringBase64: string =
       Buffer.from(userImageBytes).toString("base64");
 
-    const user = FakeData.instance.firstUser;
+    // const user = FakeData.instance.firstUser;
 
-    if (user === null) {
-      throw new Error("Invalid registration");
-    }
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-    return [user.toDto(), FakeData.instance.authToken.toDto()];
+    const newUser = new User(firstName, lastName, alias, "imageUrlPlaceholder");
+    newUser.password = hashedPassword;
+
+    await this.userDAO.createUser(newUser);
+
+    const authToken = AuthToken.Generate();
+    await this.authTokenDAO.createAuthToken(authToken);
+
+    return [newUser.toDto(), authToken.toDto()];
   }
 
   public async getUser(token: string, alias: string): Promise<UserDto | null> {

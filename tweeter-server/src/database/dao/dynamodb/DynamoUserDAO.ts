@@ -1,5 +1,6 @@
 import {
   DeleteItemCommand,
+  GetItemCommand,
   PutItemCommand,
   UpdateItemCommand,
 } from "@aws-sdk/client-dynamodb";
@@ -34,6 +35,30 @@ export class DynamoUserDAO extends DynamoBaseDAO implements UserDAO {
       console.log(`User ${user.alias} added successfully!`);
     } catch (error) {
       console.error(`Error adding user ${user.alias}:`, error);
+      throw error;
+    }
+  }
+
+  async createUserWithPassword(
+    user: User,
+    hashedPassword: string
+  ): Promise<void> {
+    const params = {
+      TableName: this.tableName,
+      Item: {
+        alias: { S: user.alias },
+        firstName: { S: user.firstName },
+        lastName: { S: user.lastName },
+        imageUrl: { S: user.imageUrl },
+        passwordHash: { S: hashedPassword },
+      },
+    };
+
+    try {
+      await this.client.send(new PutItemCommand(params));
+      console.log(`User ${user.alias} with password created successfully.`);
+    } catch (error) {
+      console.error(`Error creating user ${user.alias}:`, error);
       throw error;
     }
   }
@@ -74,12 +99,48 @@ export class DynamoUserDAO extends DynamoBaseDAO implements UserDAO {
 
   // Gets/retrieves a User by their alias
   async getUserByAlias(alias: string): Promise<User | null> {
+    const params = {
+      TableName: this.tableName,
+      Key: {
+        alias: { S: alias },
+      },
+    };
+
     try {
-      const user = await this.fetchUserDetails(alias);
-      return user;
-    } catch (error) {
-      console.error(`Error retrieving user with alias ${alias}:`, error);
+      const result = await this.client.send(new GetItemCommand(params));
+      if (result.Item) {
+        return new User(
+          result.Item.firstName?.S || "Unknown",
+          result.Item.lastName?.S || "Unknown",
+          alias,
+          result.Item.imageUrl?.S || ""
+        );
+      }
       return null;
+    } catch (error) {
+      console.error(`Error fetching user by alias ${alias}:`, error);
+      throw error;
+    }
+  }
+
+  async getPasswordHash(alias: string): Promise<string> {
+    const params = {
+      TableName: this.tableName,
+      Key: {
+        alias: { S: alias },
+      },
+      ProjectionExpression: "passwordHash",
+    };
+
+    try {
+      const result = await this.client.send(new GetItemCommand(params));
+      if (result.Item && result.Item.passwordHash?.S) {
+        return result.Item.passwordHash.S;
+      }
+      throw new Error("Password hash not found for user.");
+    } catch (error) {
+      console.error(`Error fetching password hash for alias ${alias}:`, error);
+      throw error;
     }
   }
 

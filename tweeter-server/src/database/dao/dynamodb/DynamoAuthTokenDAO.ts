@@ -35,6 +35,11 @@ export class DynamoAuthTokenDAO extends DynamoBaseDAO implements AuthTokenDAO {
     }
   }
 
+  // Stores the created token
+  async storeToken(authToken: AuthToken): Promise<void> {
+    return this.createAuthToken(authToken);
+  }
+
   // Get an AuthToken by its token string
   async getAuthToken(token: string): Promise<AuthToken | null> {
     const item = await this.getItem(this.tableName, { token: { S: token } });

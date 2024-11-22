@@ -9,4 +9,8 @@ export interface UserDAO {
   decrementFollowersCount(alias: string): Promise<void>;
   incrementFollowingCount(alias: string): Promise<void>;
   decrementFollowingCount(alias: string): Promise<void>;
+
+  // Methods for password management
+  createUserWithPassword(user: User, hashedPassword: string): Promise<void>;
+  getPasswordHash(alias: string): Promise<string>;
 }
