@@ -113,7 +113,8 @@ export class DynamoUserDAO extends DynamoBaseDAO implements UserDAO {
           result.Item.firstName?.S || "Unknown",
           result.Item.lastName?.S || "Unknown",
           alias,
-          result.Item.imageUrl?.S || ""
+          result.Item.imageUrl?.S || "",
+          result.Item.passwordHash?.S || "defaultPasswordHash"
         );
       }
       return null;

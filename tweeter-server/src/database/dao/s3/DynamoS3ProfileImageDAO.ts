@@ -1,4 +1,9 @@
-import { ObjectCannedACL, PutObjectCommand, S3 } from "@aws-sdk/client-s3";
+import {
+  ObjectCannedACL,
+  PutObjectCommand,
+  DeleteObjectCommand,
+  S3,
+} from "@aws-sdk/client-s3";
 import { S3ProfileImageDAO } from "../interfaces/S3ProfileImageDAO";
 
 export class DynamoS3ProfileImageDAO implements S3ProfileImageDAO {
@@ -16,28 +21,46 @@ export class DynamoS3ProfileImageDAO implements S3ProfileImageDAO {
     fileBuffer: Buffer,
     fileType: string
   ): Promise<string> {
-    const key = `${userAlias}.${fileType.split("/")[1]}`; // e.g., "user123.jpg"
+    if (!userAlias || !fileType) {
+      throw new Error("Invalid userAlias or fileType.");
+    }
+
+    const validMimeTypes = ["image/jpeg", "image/png"];
+    if (!validMimeTypes.includes(fileType)) {
+      throw new Error(`Unsupported file type: ${fileType}.`);
+    }
+
+    const extension = fileType.split("/")[1]; // e.g., "jpeg" from "image/jpeg"
+    const key = `${userAlias}.${extension}`;
 
     const params = {
       Bucket: this.bucketName,
       Key: key,
       Body: fileBuffer,
       ContentType: fileType,
-      ACL: "public-read" as ObjectCannedACL, // Explicitly cast to ObjectCannedACL
+      ACL: "public-read" as ObjectCannedACL,
     };
 
     try {
       await this.s3.send(new PutObjectCommand(params));
-      console.log(`Image uploaded successfully: ${key}`);
+      console.log(`Image uploaded successfully for user ${userAlias}: ${key}`);
       return `https://${this.bucketName}.s3.us-west-2.amazonaws.com/${key}`;
     } catch (error) {
-      console.error(`Error uploading image:`, error);
+      console.error(`Error uploading image for user ${userAlias}:`, error);
       throw error;
     }
   }
+
   // Deletes an image from S3
   async deleteImage(imageUrl: string): Promise<void> {
+    if (!imageUrl.includes(this.bucketName)) {
+      throw new Error("Invalid image URL.");
+    }
+
     const key = imageUrl.split(`${this.bucketName}/`)[1];
+    if (!key) {
+      throw new Error("Invalid image URL: Key extraction failed.");
+    }
 
     const params = {
       Bucket: this.bucketName,
@@ -45,16 +68,22 @@ export class DynamoS3ProfileImageDAO implements S3ProfileImageDAO {
     };
 
     try {
-      await this.s3.deleteObject(params);
+      await this.s3.send(new DeleteObjectCommand(params));
       console.log(`Image deleted successfully: ${key}`);
     } catch (error) {
-      console.error(`Error deleting image:`, error);
+      console.error(`Error deleting image for key ${key}:`, error);
       throw error;
     }
   }
 
   // Generates the public URL for an image based on the user alias
   getImageUrl(userAlias: string): string {
-    return `https://${this.bucketName}.s3.us-west-2.amazonaws.com/${userAlias}`;
+    if (!userAlias) {
+      throw new Error("Invalid user alias.");
+    }
+
+    // Assume the default format is JPEG unless specified otherwise
+    const key = `${userAlias}.jpg`;
+    return `https://${this.bucketName}.s3.us-west-2.amazonaws.com/${key}`;
   }
 }

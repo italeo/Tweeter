@@ -114,7 +114,8 @@ export abstract class DynamoBaseDAO {
           data.Item.firstName?.S || "Unknown",
           data.Item.lastName?.S || "Unknown",
           alias,
-          data.Item.imageUrl?.S || "https://default-image.url"
+          data.Item.imageUrl?.S || "https://default-image.url",
+          data.Item.passwordHash?.S || "defaultPasswordHash"
         );
         this.userCache.set(alias, user);
         return user;
@@ -135,7 +136,8 @@ export abstract class DynamoBaseDAO {
       "Allen",
       "Anderson",
       "@allen",
-      "https://faculty.cs.byu.edu/~jwilkerson/cs340/tweeter/images/donald_duck.png"
+      "https://faculty.cs.byu.edu/~jwilkerson/cs340/tweeter/images/donald_duck.png",
+      "defaultPasswordHash"
     );
     this.userCache.set(alias, fallbackUser);
     return fallbackUser;
