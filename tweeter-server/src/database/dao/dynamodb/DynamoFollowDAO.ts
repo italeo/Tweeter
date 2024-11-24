@@ -213,6 +213,7 @@ export class DynamoFollowDAO extends DynamoBaseDAO implements FollowDAO {
   async getFolloweeCount(userAlias: string): Promise<number> {
     const params: QueryCommandInput = {
       TableName: this.tableName,
+      IndexName: "FolloweeIndex",
       KeyConditionExpression: "followerAlias = :followerAlias",
       ExpressionAttributeValues: {
         ":followerAlias": { S: userAlias },
