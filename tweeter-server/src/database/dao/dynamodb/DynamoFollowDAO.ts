@@ -132,15 +132,19 @@ export class DynamoFollowDAO extends DynamoBaseDAO implements FollowDAO {
       ExclusiveStartKey: lastItem
         ? {
             followerAlias: { S: userAlias },
-            followeeAlias: { S: lastItem.alias },
+            followeeAlias: { S: lastItem.alias }, // Include the sort key if required
           }
         : undefined,
     };
 
+    console.log("DynamoDB Query Parameters:", params);
+
     try {
       const data = await this.client.send(new QueryCommand(params));
+      console.log("DynamoDB Query Result:", data);
+
       const followees: UserDto[] = await Promise.all(
-        data.Items?.map(async (item) => {
+        (data.Items || []).map(async (item) => {
           const user = await this.fetchUserDetails(
             item.followeeAlias?.S || "unknown_alias"
           );
@@ -150,14 +154,14 @@ export class DynamoFollowDAO extends DynamoBaseDAO implements FollowDAO {
             lastName: user.lastName,
             imageUrl: user.imageUrl,
           };
-        }) || []
+        })
       );
 
       const hasMore = !!data.LastEvaluatedKey;
       return { followees, hasMore };
     } catch (error) {
       console.error(`Error retrieving followees for ${userAlias}:`, error);
-      throw error;
+      throw new Error("Error loading followees.");
     }
   }
 
