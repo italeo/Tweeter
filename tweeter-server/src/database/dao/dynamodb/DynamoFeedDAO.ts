@@ -102,11 +102,18 @@ export class DynamoFeedDAO extends DynamoBaseDAO implements FeedDAO {
     try {
       const data = await this.client.send(new QueryCommand(params));
 
+      // Log the raw DynamoDB data
+      console.log("Raw DynamoDB Data for Feed:", data.Items);
+
       const statuses: Status[] = await Promise.all(
         (data.Items || []).map(async (item) => {
           const user = await this.fetchUserDetails(
             item.authorAlias?.S || "unknown_alias"
           );
+          if (!user) {
+            console.error("User not found for alias:", item.authorAlias?.S);
+            throw new Error(`User not found for alias: ${item.authorAlias?.S}`);
+          }
           return new Status(
             item.post?.S || "No content",
             user,

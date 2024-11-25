@@ -105,9 +105,17 @@ export class User {
   }
 
   public static fromDto(dto: UserDto | null): User | null {
-    return dto == null
-      ? null
-      : new User(dto.firstName, dto.lastName, dto.alias, dto.imageUrl, "");
+    if (!dto) {
+      console.error("Invalid UserDto:", dto);
+      return null;
+    }
+
+    if (!dto.firstName || !dto.lastName || !dto.alias || !dto.imageUrl) {
+      console.error("Missing required fields in UserDto:", dto);
+      return null;
+    }
+
+    return new User(dto.firstName, dto.lastName, dto.alias, dto.imageUrl, "");
   }
 
   public toDto(): UserDto {
