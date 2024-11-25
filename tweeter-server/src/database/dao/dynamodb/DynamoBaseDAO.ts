@@ -6,6 +6,7 @@ import {
   BatchWriteItemCommand,
   BatchWriteItemCommandInput,
   WriteRequest,
+  BatchGetItemCommand,
 } from "@aws-sdk/client-dynamodb";
 import { User } from "tweeter-shared";
 import { FakeData } from "tweeter-shared";
@@ -97,8 +98,13 @@ export abstract class DynamoBaseDAO {
   // Fetch user details and cache them
   protected async fetchUserDetails(alias: string): Promise<User> {
     if (this.userCache.has(alias)) {
+      console.log(`Cache hit for alias: ${alias}`);
       return this.userCache.get(alias)!;
     }
+
+    console.log(
+      `Cache miss. Fetching details for alias: ${alias} from DynamoDB`
+    );
 
     const params = {
       TableName: "Users",
@@ -109,37 +115,88 @@ export abstract class DynamoBaseDAO {
 
     try {
       const data = await this.client.send(new GetItemCommand(params));
+      console.log(`Fetched data from DynamoDB for alias ${alias}:`, data);
+
       if (data.Item) {
         const user = new User(
-          data.Item.firstName?.S || "Unknown",
-          data.Item.lastName?.S || "Unknown",
+          data.Item.firstName?.S || "",
+          data.Item.lastName?.S || "",
           alias,
-          data.Item.imageUrl?.S || "https://default-image.url",
-          data.Item.passwordHash?.S || "defaultPasswordHash"
+          data.Item.imageUrl?.S || "",
+          data.Item.passwordHash?.S || ""
         );
+
+        // Strict validation for UserDto
+        if (!user.firstName || !user.lastName || !user.imageUrl) {
+          console.error(`Invalid UserDto constructed:`, user);
+          throw new Error(`Invalid UserDto for alias: ${alias}`);
+        }
+
+        console.log(`Valid UserDto constructed:`, user);
         this.userCache.set(alias, user);
         return user;
+      } else {
+        console.error(`No item found in DynamoDB for alias: ${alias}`);
+        throw new Error(`User not found in DynamoDB for alias: ${alias}`);
       }
     } catch (error) {
       console.error(`Error fetching user details for alias: ${alias}`, error);
+      throw error;
     }
+  }
 
-    // Use @allen's details as the fallback
-    const allen = FakeData.instance.findUserByAlias("@allen");
-    if (allen) {
-      this.userCache.set(alias, allen);
-      return allen;
-    }
-
-    // Fallback to default user
-    const fallbackUser = new User(
-      "Allen",
-      "Anderson",
-      "@allen",
-      "https://faculty.cs.byu.edu/~jwilkerson/cs340/tweeter/images/donald_duck.png",
-      "defaultPasswordHash"
+  // Fetch using BatchFetching
+  protected async batchFetchUserDetails(
+    aliases: string[]
+  ): Promise<Map<string, User>> {
+    const uncachedAliases = aliases.filter(
+      (alias) => !this.userCache.has(alias)
     );
-    this.userCache.set(alias, fallbackUser);
-    return fallbackUser;
+
+    if (uncachedAliases.length === 0) {
+      console.log("All user details fetched from cache.");
+      return new Map(
+        aliases.map((alias) => [alias, this.userCache.get(alias)!])
+      );
+    }
+
+    console.log(`Batch fetching details for aliases: ${uncachedAliases}`);
+
+    const keys = uncachedAliases.map((alias) => ({ alias: { S: alias } }));
+    const params = {
+      RequestItems: {
+        Users: {
+          Keys: keys,
+        },
+      },
+    };
+
+    try {
+      const response = await this.client.send(new BatchGetItemCommand(params));
+      const items = response.Responses?.Users || [];
+
+      items.forEach((item) => {
+        const user = new User(
+          item.firstName?.S || "",
+          item.lastName?.S || "",
+          item.alias?.S || "",
+          item.imageUrl?.S || "",
+          item.passwordHash?.S || ""
+        );
+
+        if (user.firstName && user.lastName && user.imageUrl) {
+          this.userCache.set(user.alias, user);
+        } else {
+          console.error(`Invalid UserDto from batch fetch:`, item);
+        }
+      });
+
+      return new Map(
+        aliases.map((alias) => [alias, this.userCache.get(alias)!])
+      );
+    } catch (error) {
+      console.error("Error batch fetching user details:", error);
+      throw error;
+    }
   }
 }

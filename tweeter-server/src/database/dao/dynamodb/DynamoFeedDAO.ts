@@ -4,7 +4,7 @@ import {
   QueryCommandInput,
 } from "@aws-sdk/client-dynamodb";
 import { FeedDAO } from "../interfaces/FeedDAO";
-import { Status } from "tweeter-shared";
+import { Status, UserDto, StatusDto } from "tweeter-shared";
 import { DynamoBaseDAO } from "./DynamoBaseDAO";
 
 export class DynamoFeedDAO extends DynamoBaseDAO implements FeedDAO {
@@ -100,29 +100,39 @@ export class DynamoFeedDAO extends DynamoBaseDAO implements FeedDAO {
     };
 
     try {
+      console.log(`Fetching feed for user: ${userAlias}`);
       const data = await this.client.send(new QueryCommand(params));
 
-      // Log the raw DynamoDB data
       console.log("Raw DynamoDB Data for Feed:", data.Items);
 
-      const statuses: Status[] = await Promise.all(
-        (data.Items || []).map(async (item) => {
-          const user = await this.fetchUserDetails(
-            item.authorAlias?.S || "unknown_alias"
-          );
+      const feedItems = data.Items || [];
+      const authorAliases = [
+        ...new Set(feedItems.map((item) => item.authorAlias?.S)),
+      ].filter((alias): alias is string => !!alias); // Filter out undefined values
+
+      // Batch fetch user details
+      const userMap = await this.batchFetchUserDetails(authorAliases);
+
+      const statuses = feedItems
+        .map((item) => {
+          const user = userMap.get(item.authorAlias?.S || "");
           if (!user) {
             console.error("User not found for alias:", item.authorAlias?.S);
-            throw new Error(`User not found for alias: ${item.authorAlias?.S}`);
+            return null;
           }
+
           return new Status(
-            item.post?.S || "No content",
+            item.post?.S || "",
             user,
             parseInt(item.timestamp?.N || "0")
           );
         })
-      );
+        .filter((status): status is Status => status !== null);
 
       const hasMore = !!data.LastEvaluatedKey;
+      console.log(
+        `Feed retrieval complete. Status count: ${statuses.length}, Has more: ${hasMore}`
+      );
       return { statuses, hasMore };
     } catch (error) {
       console.error(`Error retrieving feed for user ${userAlias}:`, error);

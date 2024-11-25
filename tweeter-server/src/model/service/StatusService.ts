@@ -47,11 +47,10 @@ export class StatusService {
     pageSize: number,
     lastItem: StatusDto | null
   ): Promise<[StatusDto[], boolean]> {
-    // TODO: Replace with the result of calling server
-    const safeLastItem: Status | undefined = lastItem
+    const safeLastItem = lastItem
       ? Status.fromDto(lastItem) || undefined
       : undefined;
-    // Call the DAO method with a properly typed `safeLastItem`
+
     try {
       const { statuses, hasMore } = await this.feedDAO.getFeedForUser(
         userAlias,
@@ -59,12 +58,14 @@ export class StatusService {
         safeLastItem
       );
 
+      console.log(`Successfully loaded feed items for ${userAlias}.`);
+
       const dtos = statuses.map((status) => status.toDto());
       return [dtos, hasMore];
-    } catch (err) {
-      throw new Error("Error loading feed items.");
+    } catch (error) {
+      console.error(`Error loading feed items for ${userAlias}:`, error);
+      throw error;
     }
-    // return this.getFakeData(lastItem, pageSize);
   }
 
   public async postStatus(token: string, newStatus: StatusDto): Promise<void> {

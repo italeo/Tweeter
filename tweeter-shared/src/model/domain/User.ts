@@ -105,8 +105,10 @@ export class User {
   }
 
   public static fromDto(dto: UserDto | null): User | null {
+    console.log("Converting UserDto to User:", dto);
+
     if (!dto) {
-      console.error("Invalid UserDto:", dto);
+      console.error("Invalid UserDto: DTO is null or undefined");
       return null;
     }
 
@@ -115,6 +117,7 @@ export class User {
       return null;
     }
 
+    console.log("Valid UserDto fields:", dto);
     return new User(dto.firstName, dto.lastName, dto.alias, dto.imageUrl, "");
   }
 

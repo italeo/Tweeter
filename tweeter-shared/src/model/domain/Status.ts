@@ -296,18 +296,35 @@ export class Status {
 
   // Convert StatusDto to Status
   public static fromDto(dto: StatusDto | null): Status | null {
-    if (dto === null) {
-      console.error("Invalid StatusDto:", dto);
+    console.log("Converting StatusDto to Status:", dto);
+
+    if (!dto) {
+      console.error("Invalid StatusDto: DTO is null or undefined");
       return null;
     }
 
-    const user = User.fromDto(dto.user);
-    if (!user) {
-      console.error("Invalid UserDto in StatusDto:", dto.user);
-      throw new Error("Invalid UserDto in StatusDto");
-    }
+    try {
+      const user = User.fromDto(dto.user);
 
-    return new Status(dto.post, user, dto.timestamp);
+      if (!user) {
+        console.error("Invalid UserDto in StatusDto:", dto.user);
+        throw new Error("Invalid UserDto in StatusDto");
+      }
+
+      console.log("Valid User object created:", user);
+
+      const status = new Status(dto.post, user, dto.timestamp);
+      console.log("Successfully created Status object:", status);
+
+      return status;
+    } catch (error) {
+      console.error(
+        "Error in Status.fromDto while converting StatusDto:",
+        dto,
+        error
+      );
+      throw error;
+    }
   }
 
   // -----------------------------------------------------------
