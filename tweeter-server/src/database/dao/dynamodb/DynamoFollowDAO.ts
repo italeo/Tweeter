@@ -122,8 +122,16 @@ export class DynamoFollowDAO extends DynamoBaseDAO implements FollowDAO {
     pageSize: number,
     lastItem?: UserDto
   ): Promise<{ followees: UserDto[]; hasMore: boolean }> {
+    // Validate and log the lastItem
+    if (lastItem && !lastItem.alias) {
+      console.error("Invalid lastItem received:", lastItem);
+      throw new Error("Invalid lastItem for ExclusiveStartKey.");
+    }
+    console.log("LastItem received for ExclusiveStartKey:", lastItem);
+
     const params: QueryCommandInput = {
       TableName: this.tableName,
+      IndexName: "FolloweeIndex", // Explicitly target the correct index
       KeyConditionExpression: "followerAlias = :followerAlias",
       ExpressionAttributeValues: {
         ":followerAlias": { S: userAlias },
@@ -131,13 +139,14 @@ export class DynamoFollowDAO extends DynamoBaseDAO implements FollowDAO {
       Limit: pageSize,
       ExclusiveStartKey: lastItem
         ? {
-            followerAlias: { S: userAlias },
-            followeeAlias: { S: lastItem.alias }, // Include the sort key if required
+            followerAlias: { S: userAlias }, // Partition key
+            followeeAlias: { S: lastItem.alias }, // Sort key
           }
         : undefined,
     };
 
-    console.log("DynamoDB Query Parameters:", params);
+    // Log the query parameters for debugging
+    console.log("DynamoDB Query Parameters:", JSON.stringify(params, null, 2));
 
     try {
       const data = await this.client.send(new QueryCommand(params));
