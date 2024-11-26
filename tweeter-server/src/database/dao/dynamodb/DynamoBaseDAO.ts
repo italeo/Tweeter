@@ -9,13 +9,12 @@ import {
   BatchGetItemCommand,
 } from "@aws-sdk/client-dynamodb";
 import { User } from "tweeter-shared";
-import { FakeData } from "tweeter-shared";
 
 export abstract class DynamoBaseDAO {
   protected readonly client: DynamoDBClient;
   private userCache: Map<string, User> = new Map();
 
-  public constructor() {
+  constructor() {
     this.client = new DynamoDBClient({ region: "us-west-2" });
   }
 
@@ -24,16 +23,14 @@ export abstract class DynamoBaseDAO {
     tableName: string,
     key: Record<string, any>
   ): Promise<any> {
-    const params = {
-      TableName: tableName,
-      Key: key,
-    };
+    const params = { TableName: tableName, Key: key };
 
     try {
-      return await this.client.send(new GetItemCommand(params));
+      const result = await this.client.send(new GetItemCommand(params));
+      return result.Item || null;
     } catch (error) {
       console.error(`Error fetching item from table ${tableName}:`, error);
-      throw error;
+      throw new Error(`Failed to fetch item: ${JSON.stringify(key)}`);
     }
   }
 
@@ -42,16 +39,13 @@ export abstract class DynamoBaseDAO {
     tableName: string,
     item: Record<string, any>
   ): Promise<void> {
-    const params = {
-      TableName: tableName,
-      Item: item,
-    };
+    const params = { TableName: tableName, Item: item };
 
     try {
       await this.client.send(new PutItemCommand(params));
     } catch (error) {
       console.error(`Error adding item to table ${tableName}:`, error);
-      throw error;
+      throw new Error(`Failed to put item: ${JSON.stringify(item)}`);
     }
   }
 
@@ -60,16 +54,13 @@ export abstract class DynamoBaseDAO {
     tableName: string,
     key: Record<string, any>
   ): Promise<void> {
-    const params = {
-      TableName: tableName,
-      Key: key,
-    };
+    const params = { TableName: tableName, Key: key };
 
     try {
       await this.client.send(new DeleteItemCommand(params));
     } catch (error) {
       console.error(`Error deleting item from table ${tableName}:`, error);
-      throw error;
+      throw new Error(`Failed to delete item: ${JSON.stringify(key)}`);
     }
   }
 
@@ -79,9 +70,7 @@ export abstract class DynamoBaseDAO {
     writeRequests: WriteRequest[]
   ): Promise<void> {
     const params: BatchWriteItemCommandInput = {
-      RequestItems: {
-        [tableName]: writeRequests,
-      },
+      RequestItems: { [tableName]: writeRequests },
     };
 
     try {
@@ -91,7 +80,7 @@ export abstract class DynamoBaseDAO {
         `Error performing batch write on table ${tableName}:`,
         error
       );
-      throw error;
+      throw new Error("Batch write operation failed.");
     }
   }
 
@@ -105,90 +94,75 @@ export abstract class DynamoBaseDAO {
     console.log(
       `Cache miss. Fetching details for alias: ${alias} from DynamoDB`
     );
-
-    const params = {
-      TableName: "Users",
-      Key: {
-        alias: { S: alias },
-      },
-    };
-
     try {
-      const data = await this.client.send(new GetItemCommand(params));
-      if (data.Item) {
-        const user = new User(
-          data.Item.firstName?.S || "Unknown",
-          data.Item.lastName?.S || "User",
-          alias,
-          data.Item.imageUrl?.S || "default_image_url",
-          data.Item.passwordHash?.S || ""
-        );
-        this.userCache.set(alias, user);
-        return user;
-      } else {
-        console.warn(
-          `User not found for alias: ${alias}. Returning placeholder.`
-        );
-        return new User("Unknown", "User", alias, "default_image_url", "");
+      const item = await this.getItem("Users", { alias: { S: alias } });
+
+      if (!item) {
+        console.warn(`User not found for alias: ${alias}`);
+        return null;
       }
+
+      const user = new User(
+        item.firstName?.S || "Unknown",
+        item.lastName?.S || "User",
+        alias,
+        item.imageUrl?.S || "default_image_url",
+        item.passwordHash?.S || ""
+      );
+      this.userCache.set(alias, user);
+      return user;
     } catch (error) {
       console.error(`Error fetching user details for alias: ${alias}`, error);
-      return new User("Unknown", "User", alias, "default_image_url", "");
+      return null;
     }
   }
 
-  // Fetch using BatchFetching
+  // Fetch user details in bulk and cache them
   protected async batchFetchUserDetails(
     aliases: string[]
   ): Promise<Map<string, User>> {
     const uncachedAliases = aliases.filter(
       (alias) => !this.userCache.has(alias)
     );
+    const resultMap = new Map<string, User>();
 
-    if (uncachedAliases.length === 0) {
-      console.log("All user details fetched from cache.");
-      return new Map(
-        aliases.map((alias) => [alias, this.userCache.get(alias)!])
-      );
-    }
+    // Fetch uncached users
+    if (uncachedAliases.length > 0) {
+      console.log(`Batch fetching details for aliases: ${uncachedAliases}`);
 
-    console.log(`Batch fetching details for aliases: ${uncachedAliases}`);
+      const keys = uncachedAliases.map((alias) => ({ alias: { S: alias } }));
+      const params = { RequestItems: { Users: { Keys: keys } } };
 
-    const keys = uncachedAliases.map((alias) => ({ alias: { S: alias } }));
-    const params = {
-      RequestItems: {
-        Users: {
-          Keys: keys,
-        },
-      },
-    };
-
-    try {
-      const response = await this.client.send(new BatchGetItemCommand(params));
-      const items = response.Responses?.Users || [];
-
-      items.forEach((item) => {
-        const user = new User(
-          item.firstName?.S || "",
-          item.lastName?.S || "",
-          item.alias?.S || "",
-          item.imageUrl?.S || "",
-          item.passwordHash?.S || ""
+      try {
+        const response = await this.client.send(
+          new BatchGetItemCommand(params)
         );
+        const items = response.Responses?.Users || [];
 
-        if (user.firstName && user.lastName && user.imageUrl) {
+        for (const item of items) {
+          const user = new User(
+            item.firstName?.S || "Unknown",
+            item.lastName?.S || "User",
+            item.alias?.S || "",
+            item.imageUrl?.S || "",
+            item.passwordHash?.S || ""
+          );
           this.userCache.set(user.alias, user);
-        } else {
-          console.error(`Invalid UserDto from batch fetch:`, item);
+          resultMap.set(user.alias, user);
         }
-      });
-
-      return new Map(
-        aliases.map((alias) => [alias, this.userCache.get(alias)!])
-      );
-    } catch (error) {
-      console.error("Error batch fetching user details:", error);
-      throw error;
+      } catch (error) {
+        console.error("Error batch fetching user details:", error);
+        throw new Error("Batch fetch operation failed.");
+      }
     }
+
+    // Add cached users to result map
+    for (const alias of aliases) {
+      if (this.userCache.has(alias)) {
+        resultMap.set(alias, this.userCache.get(alias)!);
+      }
+    }
+
+    return resultMap;
   }
 }

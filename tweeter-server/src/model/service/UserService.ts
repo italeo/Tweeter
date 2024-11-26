@@ -32,23 +32,25 @@ export class UserService {
     alias: string,
     password: string
   ): Promise<[UserDto, AuthTokenDto]> {
-    // TODO: Replace with the result of calling the server
-    // const user = FakeData.instance.firstUser;
-
+    console.log(`Attempting login for alias: ${alias}`);
     const user = await this.userDAO.getUserByAlias(alias);
     if (!user) {
+      console.error(`User not found for alias: ${alias}`);
       throw new Error("Invalid alias or password");
     }
 
     const hashedPassword = await this.userDAO.getPasswordHash(alias);
+    console.log(`Hashed password retrieved for alias: ${alias}`);
 
     const isPasswordValid = await bcrypt.compare(password, hashedPassword);
     if (!isPasswordValid) {
+      console.error(`Invalid password for alias: ${alias}`);
       throw new Error("Invalid alias or password");
     }
 
-    // Generate and store a new authentication token
     const authToken = AuthToken.Generate();
+    console.log(`Generated token for alias: ${alias}: ${authToken.token}`);
+
     await this.authTokenDAO.storeToken(authToken);
 
     return [user.toDto(), authToken.toDto()];
