@@ -309,7 +309,11 @@ export class Status {
       throw new Error("Invalid StatusDto: Missing or invalid 'post' field");
     }
 
-    if (!dto.timestamp || typeof dto.timestamp !== "number") {
+    if (
+      dto.timestamp === undefined ||
+      dto.timestamp === null ||
+      typeof dto.timestamp !== "number"
+    ) {
       console.error(
         "Invalid StatusDto: Missing or invalid 'timestamp' field",
         dto
@@ -338,11 +342,6 @@ export class Status {
           error instanceof Error ? error.message : error
         }`
       );
-    }
-
-    if (!user) {
-      console.error("Invalid UserDto in StatusDto:", dto.user);
-      throw new Error("Invalid UserDto in StatusDto");
     }
 
     console.log("Valid User object created:", user);

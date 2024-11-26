@@ -52,12 +52,13 @@ export class DynamoStatusDAO extends DynamoBaseDAO implements StatusDAO {
         ":alias": { S: userAlias },
       },
       Limit: limit,
-      ExclusiveStartKey: lastKey
-        ? {
-            alias: { S: lastKey.alias },
-            timestamp: { N: lastKey.timestamp.toString() },
-          }
-        : undefined,
+      ExclusiveStartKey:
+        lastKey && lastKey.alias && lastKey.timestamp
+          ? {
+              alias: { S: lastKey.alias },
+              timestamp: { N: lastKey.timestamp.toString() },
+            }
+          : undefined,
     };
 
     console.log("DynamoDB Query Parameters:", JSON.stringify(params, null, 2));
