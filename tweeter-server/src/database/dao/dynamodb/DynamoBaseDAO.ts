@@ -96,7 +96,7 @@ export abstract class DynamoBaseDAO {
   }
 
   // Fetch user details and cache them
-  protected async fetchUserDetails(alias: string): Promise<User> {
+  protected async fetchUserDetails(alias: string): Promise<User | null> {
     if (this.userCache.has(alias)) {
       console.log(`Cache hit for alias: ${alias}`);
       return this.userCache.get(alias)!;
@@ -115,33 +115,25 @@ export abstract class DynamoBaseDAO {
 
     try {
       const data = await this.client.send(new GetItemCommand(params));
-      console.log(`Fetched data from DynamoDB for alias ${alias}:`, data);
-
       if (data.Item) {
         const user = new User(
-          data.Item.firstName?.S || "",
-          data.Item.lastName?.S || "",
+          data.Item.firstName?.S || "Unknown",
+          data.Item.lastName?.S || "User",
           alias,
-          data.Item.imageUrl?.S || "",
+          data.Item.imageUrl?.S || "default_image_url",
           data.Item.passwordHash?.S || ""
         );
-
-        // Strict validation for UserDto
-        if (!user.firstName || !user.lastName || !user.imageUrl) {
-          console.error(`Invalid UserDto constructed:`, user);
-          throw new Error(`Invalid UserDto for alias: ${alias}`);
-        }
-
-        console.log(`Valid UserDto constructed:`, user);
         this.userCache.set(alias, user);
         return user;
       } else {
-        console.error(`No item found in DynamoDB for alias: ${alias}`);
-        throw new Error(`User not found in DynamoDB for alias: ${alias}`);
+        console.warn(
+          `User not found for alias: ${alias}. Returning placeholder.`
+        );
+        return new User("Unknown", "User", alias, "default_image_url", "");
       }
     } catch (error) {
       console.error(`Error fetching user details for alias: ${alias}`, error);
-      throw error;
+      return new User("Unknown", "User", alias, "default_image_url", "");
     }
   }
 

@@ -24,8 +24,25 @@ export class StatusService {
     pageSize: number,
     lastItem: StatusDto | null
   ): Promise<[StatusDto[], boolean]> {
-    // TODO: Replace with the result of calling server
-    const safeLastItem = lastItem ? Status.fromDto(lastItem) : undefined;
+    console.log(
+      `Loading story items for user: ${userAlias}, pageSize: ${pageSize}, lastItem:`,
+      lastItem
+    );
+
+    let safeLastItem: Status | undefined;
+    if (lastItem) {
+      try {
+        const status = Status.fromDto(lastItem);
+        safeLastItem = status || undefined; // Convert null to undefined
+      } catch (error) {
+        console.error("Error converting lastItem to Status:", error);
+        throw new Error(
+          `Error converting lastItem: ${
+            error instanceof Error ? error.message : String(error)
+          }`
+        );
+      }
+    }
 
     try {
       const { statuses, lastKey } = await this.statusDAO.getStatusesByUser(
@@ -35,10 +52,14 @@ export class StatusService {
       );
       const dtos = statuses.map((status) => status.toDto());
       return [dtos, !!lastKey];
-    } catch (err) {
-      throw new Error("Error loading story items.");
+    } catch (error) {
+      console.error("Error loading story items:", error);
+      throw new Error(
+        `Error loading story items: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
     }
-    // return this.getFakeData(lastItem, pageSize);
   }
 
   public async loadMoreFeedItems(

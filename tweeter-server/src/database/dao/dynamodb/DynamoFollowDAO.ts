@@ -94,22 +94,33 @@ export class DynamoFollowDAO extends DynamoBaseDAO implements FollowDAO {
 
     try {
       const data = await this.client.send(new QueryCommand(params));
-      const followers: UserDto[] = await Promise.all(
-        data.Items?.map(async (item) => {
+      const followers: (UserDto | null)[] = await Promise.all(
+        (data.Items || []).map(async (item) => {
           const user = await this.fetchUserDetails(
             item.followerAlias?.S || "unknown_alias"
           );
+          if (!user) {
+            console.error(
+              `Invalid or missing user for followerAlias: ${item.followerAlias?.S}`
+            );
+            return null; // Skip invalid users
+          }
           return {
             alias: user.alias,
             firstName: user.firstName,
             lastName: user.lastName,
             imageUrl: user.imageUrl,
           };
-        }) || []
+        })
+      );
+
+      // Remove null values and ensure TypeScript understands this
+      const validFollowers = followers.filter(
+        (follower): follower is UserDto => follower !== null
       );
 
       const hasMore = !!data.LastEvaluatedKey;
-      return { followers, hasMore };
+      return { followers: validFollowers, hasMore };
     } catch (error) {
       console.error(`Error retrieving followers for ${userAlias}:`, error);
       throw error;
@@ -122,7 +133,6 @@ export class DynamoFollowDAO extends DynamoBaseDAO implements FollowDAO {
     pageSize: number,
     lastItem?: UserDto
   ): Promise<{ followees: UserDto[]; hasMore: boolean }> {
-    // Validate and log the lastItem
     if (lastItem && !lastItem.alias) {
       console.error("Invalid lastItem received:", lastItem);
       throw new Error("Invalid lastItem for ExclusiveStartKey.");
@@ -131,7 +141,7 @@ export class DynamoFollowDAO extends DynamoBaseDAO implements FollowDAO {
 
     const params: QueryCommandInput = {
       TableName: this.tableName,
-      IndexName: "FolloweeIndex", // Explicitly target the correct index
+      IndexName: "FolloweeIndex",
       KeyConditionExpression: "followerAlias = :followerAlias",
       ExpressionAttributeValues: {
         ":followerAlias": { S: userAlias },
@@ -145,18 +155,23 @@ export class DynamoFollowDAO extends DynamoBaseDAO implements FollowDAO {
         : undefined,
     };
 
-    // Log the query parameters for debugging
     console.log("DynamoDB Query Parameters:", JSON.stringify(params, null, 2));
 
     try {
       const data = await this.client.send(new QueryCommand(params));
       console.log("DynamoDB Query Result:", data);
 
-      const followees: UserDto[] = await Promise.all(
+      const followees: (UserDto | null)[] = await Promise.all(
         (data.Items || []).map(async (item) => {
           const user = await this.fetchUserDetails(
             item.followeeAlias?.S || "unknown_alias"
           );
+          if (!user) {
+            console.error(
+              `Invalid or missing user for followeeAlias: ${item.followeeAlias?.S}`
+            );
+            return null; // Skip invalid users
+          }
           return {
             alias: user.alias,
             firstName: user.firstName,
@@ -166,8 +181,13 @@ export class DynamoFollowDAO extends DynamoBaseDAO implements FollowDAO {
         })
       );
 
+      // Remove null values and ensure TypeScript understands this
+      const validFollowees = followees.filter(
+        (followee): followee is UserDto => followee !== null
+      );
+
       const hasMore = !!data.LastEvaluatedKey;
-      return { followees, hasMore };
+      return { followees: validFollowees, hasMore };
     } catch (error) {
       console.error(`Error retrieving followees for ${userAlias}:`, error);
       throw new Error("Error loading followees.");

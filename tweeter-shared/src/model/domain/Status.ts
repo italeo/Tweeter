@@ -295,35 +295,69 @@ export class Status {
   }
 
   // Convert StatusDto to Status
+  // Convert StatusDto to Status
   public static fromDto(dto: StatusDto | null): Status | null {
     console.log("Converting StatusDto to Status:", dto);
 
     if (!dto) {
       console.error("Invalid StatusDto: DTO is null or undefined");
-      return null;
+      throw new Error("Invalid StatusDto: DTO is null or undefined");
     }
 
-    try {
-      const user = User.fromDto(dto.user);
+    if (!dto.post || typeof dto.post !== "string") {
+      console.error("Invalid StatusDto: Missing or invalid 'post' field", dto);
+      throw new Error("Invalid StatusDto: Missing or invalid 'post' field");
+    }
 
+    if (!dto.timestamp || typeof dto.timestamp !== "number") {
+      console.error(
+        "Invalid StatusDto: Missing or invalid 'timestamp' field",
+        dto
+      );
+      throw new Error(
+        "Invalid StatusDto: Missing or invalid 'timestamp' field"
+      );
+    }
+
+    if (!dto.user) {
+      console.error("Invalid StatusDto: Missing 'user' field", dto);
+      throw new Error("Invalid StatusDto: Missing 'user' field");
+    }
+
+    let user: User | null;
+    try {
+      user = User.fromDto(dto.user);
       if (!user) {
         console.error("Invalid UserDto in StatusDto:", dto.user);
-        throw new Error("Invalid UserDto in StatusDto");
+        throw new Error("Invalid UserDto in StatusDto: User is null");
       }
+    } catch (error) {
+      console.error("Error converting UserDto in StatusDto:", dto.user, error);
+      throw new Error(
+        `Error converting UserDto in StatusDto: ${
+          error instanceof Error ? error.message : error
+        }`
+      );
+    }
 
-      console.log("Valid User object created:", user);
+    if (!user) {
+      console.error("Invalid UserDto in StatusDto:", dto.user);
+      throw new Error("Invalid UserDto in StatusDto");
+    }
 
+    console.log("Valid User object created:", user);
+
+    try {
       const status = new Status(dto.post, user, dto.timestamp);
       console.log("Successfully created Status object:", status);
-
       return status;
     } catch (error) {
-      console.error(
-        "Error in Status.fromDto while converting StatusDto:",
-        dto,
-        error
+      console.error("Error creating Status from StatusDto:", dto, error);
+      throw new Error(
+        `Error creating Status from StatusDto: ${
+          error instanceof Error ? error.message : error
+        }`
       );
-      throw error;
     }
   }
 
