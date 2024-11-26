@@ -1,19 +1,21 @@
 import { Buffer } from "buffer";
-import { User, AuthToken, FakeData } from "tweeter-shared";
+import { User, AuthToken } from "tweeter-shared";
 import { ServerFacade } from "../network/ServerFacade";
 
 export class UserService {
   private serverFacade = ServerFacade.getInstance();
+
   public async login(
     alias: string,
     password: string
   ): Promise<[User, AuthToken]> {
-    const request = {
-      alias,
-      password,
-    };
+    const response = await this.serverFacade.login(alias, password);
 
-    return await this.serverFacade.login(request);
+    if (!response || !response[0] || !response[1]) {
+      throw new Error("Login failed: Invalid response from server.");
+    }
+
+    return response;
   }
 
   public async register(
@@ -24,27 +26,32 @@ export class UserService {
     userImageBytes: Uint8Array,
     imageFileExtension: string
   ): Promise<[User, AuthToken]> {
-    // Not neded now, but will be needed when you make the request to the server in milestone 3
-    const imageStringBase64: string =
-      Buffer.from(userImageBytes).toString("base64");
+    const imageStringBase64 = Buffer.from(userImageBytes).toString("base64");
 
-    const request = {
+    const response = await this.serverFacade.register(
       firstName,
       lastName,
       alias,
       password,
-      userImageBase64: imageStringBase64,
-      imageFileExtension,
-    };
+      imageStringBase64,
+      imageFileExtension
+    );
 
-    return await this.serverFacade.register(request);
+    if (!response || !response[0] || !response[1]) {
+      throw new Error("Registration failed: Invalid response from server.");
+    }
+
+    return response;
   }
 
-  public async getUser(
-    authToken: AuthToken,
-    alias: string
-  ): Promise<User | null> {
-    return await this.serverFacade.getUser(authToken, alias);
+  public async getUser(authToken: AuthToken, alias: string): Promise<User> {
+    const user = await this.serverFacade.getUser(authToken, alias);
+
+    if (!user) {
+      throw new Error("Get user failed: User not found.");
+    }
+
+    return user;
   }
 
   public async logout(authToken: AuthToken): Promise<void> {

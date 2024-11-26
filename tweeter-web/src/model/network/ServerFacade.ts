@@ -31,6 +31,7 @@ import {
   UserDto,
 } from "tweeter-shared";
 import { ClientCommunicator } from "./ClientCommunicator";
+import { Buffer } from "buffer";
 
 export class ServerFacade {
   private static instance: ServerFacade;
@@ -360,142 +361,111 @@ export class ServerFacade {
   // User calls
   //
   public async register(
-    request: Omit<RegisterRequest, "token">
+    firstName: string,
+    lastName: string,
+    alias: string,
+    password: string,
+    userImageBase64: string,
+    imageFileExtension: string
   ): Promise<[User, AuthToken]> {
-    const fullRequest: RegisterRequest = {
-      ...request,
+    const request: RegisterRequest = {
+      firstName,
+      lastName,
+      alias,
+      password,
+      userImageBase64,
+      imageFileExtension,
       token: "dummy_token_for_registration",
     };
 
-    try {
-      const response = await this.clientCommunicator.doPost<
-        RegisterRequest,
-        RegisterResponse
-      >(fullRequest, "/register");
+    const response = await this.clientCommunicator.doPost<
+      RegisterRequest,
+      RegisterResponse
+    >(request, "/register");
 
-      if (response.success) {
-        const user = User.fromDto(response.user as UserDto);
-        const authToken = AuthToken.fromDto(response.authToken as AuthTokenDto);
-        return [user as User, authToken as AuthToken];
-      } else {
-        console.error("Register failed:", response);
-        throw new Error(
-          response.message || "An error occurred during registration"
-        );
+    if (response.success) {
+      const user = response.user
+        ? User.fromDto(response.user as UserDto)
+        : null;
+      const authToken = response.authToken
+        ? AuthToken.fromDto(response.authToken as AuthTokenDto)
+        : null;
+
+      if (!user || !authToken) {
+        throw new Error("Registration failed: User or AuthToken is null.");
       }
-    } catch (error) {
-      if (error instanceof Error) {
-        console.error("Client communicator POST failed:", error.message);
-        throw new Error("Client communicator POST failed: " + error.message);
-      } else {
-        console.error(
-          "Client communicator POST failed with unknown error:",
-          error
-        );
-        throw new Error("Client communicator POST failed with unknown error");
-      }
+
+      return [user, authToken];
+    } else {
+      throw new Error(response.message || "Registration failed");
     }
   }
 
   public async login(
-    request: Omit<LoginRequest, "token">
+    alias: string,
+    password: string
   ): Promise<[User, AuthToken]> {
-    const fullRequest: LoginRequest = {
-      ...request,
+    const request: LoginRequest = {
+      alias,
+      password,
       token: "dummy_token_for_login",
     };
 
-    try {
-      const response = await this.clientCommunicator.doPost<
-        LoginRequest,
-        LoginResponse
-      >(fullRequest, "/login");
+    const response = await this.clientCommunicator.doPost<
+      LoginRequest,
+      LoginResponse
+    >(request, "/login");
 
-      if (response.success) {
-        const user = User.fromDto(response.user as UserDto);
-        const authToken = AuthToken.fromDto(response.authToken as AuthTokenDto);
-        return [user as User, authToken as AuthToken];
-      } else {
-        console.error("Login failed:", response);
-        throw new Error(response.message || "An error occurred during login");
+    if (response.success) {
+      const user = response.user
+        ? User.fromDto(response.user as UserDto)
+        : null;
+      const authToken = response.authToken
+        ? AuthToken.fromDto(response.authToken as AuthTokenDto)
+        : null;
+
+      if (!user || !authToken) {
+        throw new Error("Login failed: User or AuthToken is null.");
       }
-    } catch (error) {
-      if (error instanceof Error) {
-        console.error("Client communicator POST failed:", error.message);
-        throw new Error("Client communicator POST failed: " + error.message);
-      } else {
-        console.error(
-          "Client communicator POST failed with unknown error:",
-          error
-        );
-        throw new Error("Client communicator POST failed with unknown error");
-      }
+
+      return [user, authToken];
+    } else {
+      throw new Error(response.message || "Login failed");
     }
   }
 
   public async logout(authToken: AuthToken): Promise<void> {
-    const request: LogoutRequest = {
-      token: authToken.token,
-    };
+    const request: LogoutRequest = { token: authToken.token };
 
-    try {
-      const response = await this.clientCommunicator.doPost<
-        LogoutRequest,
-        LogoutResponse
-      >(request, "/logout");
+    const response = await this.clientCommunicator.doPost<
+      LogoutRequest,
+      LogoutResponse
+    >(request, "/logout");
 
-      if (!response.success) {
-        console.error("Logout failed:", response);
-        throw new Error(response.message || "An error occurred during logout");
-      }
-    } catch (error) {
-      if (error instanceof Error) {
-        console.error("Client communicator POST failed:", error.message);
-        throw new Error("Client communicator POST failed: " + error.message);
-      } else {
-        console.error(
-          "Client communicator POST failed with unknown error:",
-          error
-        );
-        throw new Error("Client communicator POST failed with unknown error");
-      }
+    if (!response.success) {
+      throw new Error(response.message || "Logout failed");
     }
   }
 
-  public async getUser(
-    authToken: AuthToken,
-    alias: string
-  ): Promise<User | null> {
+  public async getUser(authToken: AuthToken, alias: string): Promise<User> {
     const request: GetUserRequest = {
       token: authToken.token,
-      alias: alias,
+      alias,
     };
 
-    try {
-      const response = await this.clientCommunicator.doPost<
-        GetUserRequest,
-        GetUserResponse
-      >(request, "/user");
+    const response = await this.clientCommunicator.doPost<
+      GetUserRequest,
+      GetUserResponse
+    >(request, "/user");
 
-      if (response.success) {
-        return response.user ? User.fromDto(response.user as UserDto) : null;
-      } else {
-        console.error("GetUser failed:", response);
-        throw new Error(
-          response.message || "An error occurred while fetching user data"
-        );
+    if (response.success && response.user) {
+      const user = User.fromDto(response.user as UserDto);
+      if (!user) {
+        throw new Error("User retrieval failed: User is null.");
       }
-    } catch (error) {
-      if (error instanceof Error) {
-        console.error("Client communicator POST failed:", error.message);
-        throw new Error("Client communicator POST failed: " + error.message);
-      } else {
-        console.error(
-          "Client communicator POST failed with unknown error:",
-          error
-        );
-        throw new Error("Client communicator POST failed with unknown error");
-      }
+      return user;
+    } else {
+      throw new Error(response.message || "User not found");
     }
   }
 }
