@@ -13,7 +13,7 @@ export const handler = async (
   const authTokenDAO = new DynamoAuthTokenDAO();
 
   // Inject the DAOs into the UserService
-  const userService = new UserService(userDAO, authTokenDAO);
+  const userService = new UserService(userDAO, authTokenDAO, profileImageDAO);
 
   if (!request.token) {
     return {

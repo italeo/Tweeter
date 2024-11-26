@@ -20,6 +20,11 @@ export class DynamoUserDAO extends DynamoBaseDAO implements UserDAO {
 
   // Adds a User to the Users table
   async createUser(user: User): Promise<void> {
+    if (!user.password) {
+      throw new Error("Password is required to create a user.");
+    }
+
+    const hashedPassword = user.password; // Assume already hashed before passing
     const params = {
       TableName: this.tableName,
       Item: {
@@ -27,15 +32,16 @@ export class DynamoUserDAO extends DynamoBaseDAO implements UserDAO {
         firstName: { S: user.firstName },
         lastName: { S: user.lastName },
         imageUrl: { S: user.imageUrl },
+        passwordHash: { S: hashedPassword },
       },
     };
 
     try {
       await this.client.send(new PutItemCommand(params));
-      console.log(`User ${user.alias} added successfully!`);
+      console.log(`User ${user.alias} added successfully.`);
     } catch (error) {
       console.error(`Error adding user ${user.alias}:`, error);
-      throw error;
+      throw new Error(`Failed to create user: ${user.alias}`);
     }
   }
 
@@ -117,10 +123,11 @@ export class DynamoUserDAO extends DynamoBaseDAO implements UserDAO {
           result.Item.passwordHash?.S || "defaultPasswordHash"
         );
       }
-      return null;
+      console.warn(`User with alias ${alias} not found.`);
+      return null; // Return null if user does not exist
     } catch (error) {
       console.error(`Error fetching user by alias ${alias}:`, error);
-      throw error;
+      throw new Error(`Failed to fetch user: ${alias}`);
     }
   }
 

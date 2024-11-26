@@ -1,4 +1,8 @@
-import { DynamoDBClient, PutItemCommand } from "@aws-sdk/client-dynamodb";
+import {
+  DynamoDBClient,
+  PutItemCommand,
+  UpdateItemCommand,
+} from "@aws-sdk/client-dynamodb";
 import { AuthToken, FakeData, Status, User } from "tweeter-shared";
 import bcrypt from "bcryptjs";
 
@@ -18,6 +22,8 @@ const addUser = async (user: User) => {
       lastName: { S: user.lastName },
       imageUrl: { S: user.imageUrl },
       passwordHash: { S: hashedPassword },
+      followersCount: { N: "0" },
+      followingCount: { N: "0" },
     },
   };
 
@@ -26,6 +32,58 @@ const addUser = async (user: User) => {
     console.log(`User ${user.alias} added successfully!`);
   } catch (error) {
     console.error(`Error adding user ${user.alias}:`, error);
+  }
+};
+
+//
+// Increment Followers Count
+//
+const incrementFollowersCount = async (alias: string) => {
+  const params = {
+    TableName: "Users",
+    Key: {
+      alias: { S: alias },
+    },
+    UpdateExpression: "SET followersCount = followersCount + :inc",
+    ExpressionAttributeValues: {
+      ":inc": { N: "1" },
+    },
+  };
+
+  try {
+    await client.send(new UpdateItemCommand(params));
+    console.log(`Followers count incremented for user ${alias}.`);
+  } catch (error) {
+    console.error(
+      `Error incrementing followers count for user ${alias}:`,
+      error
+    );
+  }
+};
+
+//
+// Increment Following Count
+//
+const incrementFollowingCount = async (alias: string) => {
+  const params = {
+    TableName: "Users",
+    Key: {
+      alias: { S: alias },
+    },
+    UpdateExpression: "SET followingCount = followingCount + :inc",
+    ExpressionAttributeValues: {
+      ":inc": { N: "1" },
+    },
+  };
+
+  try {
+    await client.send(new UpdateItemCommand(params));
+    console.log(`Following count incremented for user ${alias}.`);
+  } catch (error) {
+    console.error(
+      `Error incrementing following count for user ${alias}:`,
+      error
+    );
   }
 };
 
@@ -46,6 +104,10 @@ const addFollow = async (followeeAlias: string, followerAlias: string) => {
     console.log(
       `Follow relationship: ${followerAlias} -> ${followeeAlias} added successfully!`
     );
+
+    // Update followersCount for followee and followingCount for follower
+    await incrementFollowersCount(followeeAlias);
+    await incrementFollowingCount(followerAlias);
   } catch (error) {
     console.error(
       `Error adding follow relationship: ${followerAlias} -> ${followeeAlias}:`,
@@ -122,6 +184,9 @@ const addAuthToken = async (authToken: AuthToken) => {
   }
 };
 
+//
+// Populate Tables
+//
 const populateTables = async () => {
   const fakeData = FakeData.instance;
 

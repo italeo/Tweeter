@@ -10,15 +10,22 @@ import {
 import { AuthTokenDAO } from "../../database/dao/interfaces/AuthTokenDAO";
 import { UserDAO } from "../../database/dao/interfaces/UserDAO";
 import bcrypt from "bcryptjs";
+import { DynamoS3ProfileImageDAO } from "../../database/dao/s3/DynamoS3ProfileImageDAO";
 
 export class UserService {
   private userDAO: UserDAO;
   private authTokenDAO: AuthTokenDAO;
+  private profileImageDAO: DynamoS3ProfileImageDAO;
 
   // Inject DAOs into the service
-  public constructor(userDAO: UserDAO, authTokenDAO: AuthTokenDAO) {
+  public constructor(
+    userDAO: UserDAO,
+    authTokenDAO: AuthTokenDAO,
+    profileImageDAO: DynamoS3ProfileImageDAO
+  ) {
     this.userDAO = userDAO;
     this.authTokenDAO = authTokenDAO;
+    this.profileImageDAO = profileImageDAO;
   }
 
   public async login(
@@ -55,23 +62,29 @@ export class UserService {
     userImageBytes: Uint8Array,
     imageFileExtension: string
   ): Promise<[UserDto, AuthTokenDto]> {
-    // Not neded now, but will be needed when you make the request to the server in milestone 3
-    const imageStringBase64: string =
-      Buffer.from(userImageBytes).toString("base64");
+    // const imageStringBase64: string =
+    //   Buffer.from(userImageBytes).toString("base64");
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // const user = FakeData.instance.firstUser;
+    const imageBuffer = Buffer.from(userImageBytes);
+
+    // Upload profile image to S3
+    const imageUrl = await this.profileImageDAO.uploadProfileImage(
+      alias,
+      imageBuffer,
+      imageFileExtension
+    );
 
     const newUser = new User(
       firstName,
       lastName,
       alias,
-      "imageUrlPlaceholder",
+      imageUrl,
       hashedPassword
     );
 
     try {
-      await this.userDAO.createUser(newUser);
+      await this.userDAO.createUserWithPassword(newUser, hashedPassword);
     } catch (err) {
       throw new Error("Error creating new user.");
     }

@@ -3,6 +3,7 @@ import { UserService } from "../../model/service/UserService";
 import { DynamoS3ProfileImageDAO } from "../../database/dao/s3/DynamoS3ProfileImageDAO";
 import { DynamoUserDAO } from "../../database/dao/dynamodb/DynamoUserDAO";
 import { DynamoAuthTokenDAO } from "../../database/dao/dynamodb/DynamoAuthTokenDAO";
+import { Buffer } from "buffer";
 
 export const handler = async (
   request: RegisterRequest
@@ -16,6 +17,10 @@ export const handler = async (
     !request.userImageBase64 ||
     !request.imageFileExtension
   ) {
+    console.error(
+      "Missing required fields in the registration request:",
+      request
+    );
     return {
       success: false,
       message: "Missing required fields in the registration request.",
@@ -32,18 +37,37 @@ export const handler = async (
     };
   }
 
-  // Convert base64 image to bytes
-  const userImageBytes = Buffer.from(request.userImageBase64, "base64");
+  // Convert Base64 image to Buffer
+  let userImageBytes: Buffer;
+  try {
+    userImageBytes = Buffer.from(request.userImageBase64, "base64");
+  } catch (error) {
+    console.error("Failed to convert userImageBase64 to bytes:", error);
+    return {
+      success: false,
+      message: "Invalid user image data. Please try again.",
+      user: {
+        alias: "",
+        firstName: "",
+        lastName: "",
+        imageUrl: "",
+      },
+      authToken: {
+        token: "",
+        timestamp: 0,
+      },
+    };
+  }
 
-  // Instantiate the required DAOs
+  // Instantiate DAOs
   const profileImageDAO = new DynamoS3ProfileImageDAO();
   const userDAO = new DynamoUserDAO(profileImageDAO);
   const authTokenDAO = new DynamoAuthTokenDAO();
 
   // Inject the DAOs into the UserService
-  const userService = new UserService(userDAO, authTokenDAO);
+  const userService = new UserService(userDAO, authTokenDAO, profileImageDAO);
 
-  // Handle the registration logic
+  // Handle registration logic
   try {
     const [user, authToken] = await userService.register(
       request.firstName,
@@ -54,7 +78,7 @@ export const handler = async (
       request.imageFileExtension
     );
 
-    // Return a success response
+    // Return success response
     return {
       success: true,
       message: null,
@@ -64,7 +88,7 @@ export const handler = async (
   } catch (error) {
     console.error("Error during user registration:", error);
 
-    // Return an error response
+    // Return error response
     return {
       success: false,
       message: "An error occurred during registration. Please try again.",

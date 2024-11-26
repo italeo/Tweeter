@@ -32,7 +32,7 @@ export const handler = async (
   const authTokenDAO = new DynamoAuthTokenDAO();
 
   // Inject DAOs into the service
-  const userService = new UserService(userDAO, authTokenDAO);
+  const userService = new UserService(userDAO, authTokenDAO, profileImageDAO);
 
   // Fetch the user data
   try {
