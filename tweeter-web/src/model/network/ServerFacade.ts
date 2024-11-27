@@ -378,6 +378,9 @@ export class ServerFacade {
       token: "dummy_token_for_registration",
     };
 
+    // Log the payload being sent to the backend
+    console.log("Register Payload:", request);
+
     const response = await this.clientCommunicator.doPost<
       RegisterRequest,
       RegisterResponse

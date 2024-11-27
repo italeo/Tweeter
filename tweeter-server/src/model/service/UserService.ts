@@ -66,18 +66,22 @@ export class UserService {
   ): Promise<[UserDto, AuthTokenDto]> {
     console.log("Starting user registration...");
 
+    console.log("Hashing password...");
     const hashedPassword = await bcrypt.hash(password, 10);
     console.log("Password hashed successfully.");
 
+    console.log("Before decoding Base64 string...");
     const imageBuffer = Buffer.from(userImageBytes);
+    console.log("After decoding, image buffer size:", imageBuffer.length);
 
     // Upload profile image to S3
+    console.log("Uploading image to S3...");
     const imageUrl = await this.profileImageDAO.uploadProfileImage(
       alias,
       imageBuffer,
       imageFileExtension
     );
-    console.log(`Profile image uploaded to: ${imageUrl}`);
+    console.log(`Profile image uploaded to S3 successfully: ${imageUrl}`);
 
     const newUser = new User(
       firstName,

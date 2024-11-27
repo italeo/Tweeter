@@ -8,6 +8,16 @@ import { Buffer } from "buffer";
 export const handler = async (
   request: RegisterRequest
 ): Promise<RegisterResponse> => {
+  // Log payload structure (excluding sensitive data)
+  console.log("Received payload:", {
+    firstName: request.firstName,
+    lastName: request.lastName,
+    alias: request.alias,
+    password: "REDACTED", // Avoid logging sensitive data
+    userImageBase64Length: request.userImageBase64?.length || 0,
+    imageFileExtension: request.imageFileExtension,
+  });
+
   // Validate request fields
   if (
     !request.firstName ||
@@ -40,7 +50,9 @@ export const handler = async (
   // Convert Base64 image to Buffer
   let userImageBytes: Buffer;
   try {
+    console.log("Decoding Base64 user image...");
     userImageBytes = Buffer.from(request.userImageBase64, "base64");
+    console.log("Decoded image size:", userImageBytes.length, "bytes");
   } catch (error) {
     console.error("Failed to convert userImageBase64 to bytes:", error);
     return {
@@ -77,6 +89,9 @@ export const handler = async (
       userImageBytes,
       request.imageFileExtension
     );
+
+    // Log success for debugging
+    console.log("Registration successful:", { user, authToken });
 
     // Return success response
     return {

@@ -21,25 +21,45 @@ export class DynamoS3ProfileImageDAO implements S3ProfileImageDAO {
     fileBuffer: Buffer,
     fileType: string
   ): Promise<string> {
+    console.log(`Uploading profile image for userAlias: ${userAlias}`);
+    console.log(`File type received: ${fileType}`);
+    console.log(`File buffer size: ${fileBuffer.byteLength} bytes`);
+
     if (!userAlias || !fileType) {
+      console.error("Invalid userAlias or fileType.");
       throw new Error("Invalid userAlias or fileType.");
     }
 
+    // Define valid MIME types and map common extensions to MIME types
     const validMimeTypes = ["image/jpeg", "image/png"];
-    if (!validMimeTypes.includes(fileType)) {
-      throw new Error(`Unsupported file type: ${fileType}.`);
+    const extensionMapping: Record<string, string> = {
+      jpg: "image/jpeg",
+      jpeg: "image/jpeg",
+      png: "image/png",
+    };
+
+    // Map fileType (e.g., "jpg") to MIME type (e.g., "image/jpeg")
+    const mimeType = extensionMapping[fileType.toLowerCase()];
+    if (!mimeType || !validMimeTypes.includes(mimeType)) {
+      console.error(`Unsupported file type: ${fileType}`);
+      throw new Error(`Unsupported file type: ${fileType}`);
     }
 
-    const extension = fileType.split("/")[1]; // e.g., "jpeg" from "image/jpeg"
+    const extension = mimeType.split("/")[1]; // Extract extension (e.g., "jpeg" from "image/jpeg")
     const key = `${userAlias}.${extension}`;
 
     const params = {
       Bucket: this.bucketName,
       Key: key,
       Body: fileBuffer,
-      ContentType: fileType,
-      ACL: "public-read" as ObjectCannedACL,
+      ContentType: mimeType,
     };
+
+    console.log("S3 upload parameters:", {
+      Bucket: params.Bucket,
+      Key: params.Key,
+      ContentType: params.ContentType,
+    });
 
     try {
       await this.s3.send(new PutObjectCommand(params));
