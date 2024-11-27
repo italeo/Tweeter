@@ -121,7 +121,13 @@ export abstract class DynamoBaseDAO {
   protected async batchFetchUserDetails(
     aliases: string[]
   ): Promise<Map<string, User>> {
-    const uncachedAliases = aliases.filter(
+    // Remove @ prefix for all aliases
+    const formattedAliases = aliases.map((alias) =>
+      alias.startsWith("@") ? alias.substring(1) : alias
+    );
+
+    // Filter out already cached aliases
+    const uncachedAliases = formattedAliases.filter(
       (alias) => !this.userCache.has(alias)
     );
     const resultMap = new Map<string, User>();
@@ -129,8 +135,9 @@ export abstract class DynamoBaseDAO {
     if (uncachedAliases.length > 0) {
       console.log(`Batch fetching details for aliases: ${uncachedAliases}`);
 
+      // Prepare keys for BatchGetItemCommand
       const keys = uncachedAliases.map((alias) => ({
-        alias: { S: alias.startsWith("@") ? alias.substring(1) : alias },
+        alias: { S: alias }, // Use formatted alias without '@'
       }));
 
       console.log("Keys for BatchGetItemCommand:", keys);
@@ -154,7 +161,7 @@ export abstract class DynamoBaseDAO {
             item.passwordHash?.S || ""
           );
           this.userCache.set(user.alias, user); // Add to cache
-          resultMap.set(user.alias, user);
+          resultMap.set(user.alias, user); // Add to result map
         }
 
         // Handle unprocessed keys
@@ -164,12 +171,11 @@ export abstract class DynamoBaseDAO {
             response.UnprocessedKeys.Users.Keys
           );
 
-          // Extract aliases and filter out undefined values
+          // Retry unprocessed keys
           const unprocessedAliases = response.UnprocessedKeys.Users.Keys.map(
             (key) => key.alias?.S
           ).filter((alias): alias is string => !!alias); // Ensure only non-undefined strings
 
-          // Retry unprocessed keys
           const unprocessedResults = await this.batchFetchUserDetails(
             unprocessedAliases
           );
@@ -185,7 +191,7 @@ export abstract class DynamoBaseDAO {
     }
 
     // Add cached users to result map
-    for (const alias of aliases) {
+    for (const alias of formattedAliases) {
       if (this.userCache.has(alias)) {
         resultMap.set(alias, this.userCache.get(alias)!);
       }
