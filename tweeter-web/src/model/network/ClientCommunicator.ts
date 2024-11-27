@@ -1,4 +1,4 @@
-import { TweeterRequest, TweeterResponse } from "tweeter-shared";
+import { TweeterResponse } from "tweeter-shared";
 
 export class ClientCommunicator {
   private SERVER_URL: string;
@@ -7,8 +7,8 @@ export class ClientCommunicator {
     this.SERVER_URL = SERVER_URL;
   }
 
-  public async doPost<REQ extends TweeterRequest, RES extends TweeterResponse>(
-    req: REQ | undefined,
+  public async doPost<REQ extends object, RES extends TweeterResponse>(
+    req: REQ,
     endpoint: string,
     headers?: Headers
   ): Promise<RES> {
@@ -23,11 +23,7 @@ export class ClientCommunicator {
     console.log(`The request body is '${JSON.stringify(req)}'`);
 
     const url = this.getUrl(endpoint);
-    const params = this.getParams(
-      "POST",
-      headers,
-      req ? JSON.stringify(req) : req
-    );
+    const params = this.getParams("POST", headers, JSON.stringify(req));
 
     console.log(`Fetching '${url}' with params '${JSON.stringify(params)}'`);
 
@@ -35,7 +31,6 @@ export class ClientCommunicator {
       const resp: Response = await fetch(url, params);
 
       if (resp.ok) {
-        // Be careful with the return type here. resp.json() returns Promise<any> which means there is no type checking on response.
         const response: RES = await resp.json();
         return response;
       } else {
@@ -59,7 +54,7 @@ export class ClientCommunicator {
   private getParams(
     method: string,
     headers?: Headers,
-    body?: BodyInit
+    body?: BodyInit | null
   ): RequestInit {
     const params: RequestInit = { method: method };
 

@@ -408,7 +408,6 @@ export class ServerFacade {
     const request: LoginRequest = {
       alias,
       password,
-      token: "dummy_token_for_login",
     };
 
     const response = await this.clientCommunicator.doPost<

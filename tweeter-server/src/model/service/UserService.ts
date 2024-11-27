@@ -64,9 +64,10 @@ export class UserService {
     userImageBytes: Uint8Array,
     imageFileExtension: string
   ): Promise<[UserDto, AuthTokenDto]> {
-    // const imageStringBase64: string =
-    //   Buffer.from(userImageBytes).toString("base64");
+    console.log("Starting user registration...");
+
     const hashedPassword = await bcrypt.hash(password, 10);
+    console.log("Password hashed successfully.");
 
     const imageBuffer = Buffer.from(userImageBytes);
 
@@ -76,6 +77,7 @@ export class UserService {
       imageBuffer,
       imageFileExtension
     );
+    console.log(`Profile image uploaded to: ${imageUrl}`);
 
     const newUser = new User(
       firstName,
@@ -87,14 +89,20 @@ export class UserService {
 
     try {
       await this.userDAO.createUserWithPassword(newUser, hashedPassword);
+      console.log("User created successfully in the database.");
     } catch (err) {
+      console.error("Error creating new user:", err);
       throw new Error("Error creating new user.");
     }
 
     const authToken = AuthToken.Generate();
+    console.log(`Generated AuthToken: ${authToken.token}`);
+
     try {
-      await this.authTokenDAO.createAuthToken(authToken);
+      await this.authTokenDAO.createAuthToken(authToken); // Log specific error from here
+      console.log("AuthToken stored successfully.");
     } catch (err) {
+      console.error("Error storing authentication token:", err);
       throw new Error("Error storing authentication token.");
     }
 
