@@ -33,23 +33,29 @@ export class UserService {
     password: string
   ): Promise<[UserDto, AuthTokenDto]> {
     console.log(`Attempting login for alias: ${alias}`);
-    const user = await this.userDAO.getUserByAlias(alias);
+
+    // Ensure alias has `@` prefix
+    const aliasWithPrefix = alias.startsWith("@") ? alias : `@${alias}`;
+
+    const user = await this.userDAO.getUserByAlias(aliasWithPrefix);
     if (!user) {
-      console.error(`User not found for alias: ${alias}`);
+      console.error(`User not found for alias: ${aliasWithPrefix}`);
       throw new Error("Invalid alias or password");
     }
 
-    const hashedPassword = await this.userDAO.getPasswordHash(alias);
-    console.log(`Hashed password retrieved for alias: ${alias}`);
+    const hashedPassword = await this.userDAO.getPasswordHash(aliasWithPrefix);
+    console.log(`Hashed password retrieved for alias: ${aliasWithPrefix}`);
 
     const isPasswordValid = await bcrypt.compare(password, hashedPassword);
     if (!isPasswordValid) {
-      console.error(`Invalid password for alias: ${alias}`);
+      console.error(`Invalid password for alias: ${aliasWithPrefix}`);
       throw new Error("Invalid alias or password");
     }
 
     const authToken = AuthToken.Generate();
-    console.log(`Generated token for alias: ${alias}: ${authToken.token}`);
+    console.log(
+      `Generated token for alias: ${aliasWithPrefix}: ${authToken.token}`
+    );
 
     await this.authTokenDAO.storeToken(authToken);
 
@@ -66,6 +72,9 @@ export class UserService {
   ): Promise<[UserDto, AuthTokenDto]> {
     console.log("Starting user registration...");
 
+    // Ensure alias has `@` prefix
+    const aliasWithPrefix = alias.startsWith("@") ? alias : `@${alias}`;
+
     console.log("Hashing password...");
     const hashedPassword = await bcrypt.hash(password, 10);
     console.log("Password hashed successfully.");
@@ -74,10 +83,10 @@ export class UserService {
     const imageBuffer = Buffer.from(userImageBytes);
     console.log("After decoding, image buffer size:", imageBuffer.length);
 
-    // Upload profile image to S3
+    // Upload profile image to S3 using alias with `@` prefix
     console.log("Uploading image to S3...");
     const imageUrl = await this.profileImageDAO.uploadProfileImage(
-      alias,
+      aliasWithPrefix,
       imageBuffer,
       imageFileExtension
     );
@@ -86,7 +95,7 @@ export class UserService {
     const newUser = new User(
       firstName,
       lastName,
-      alias,
+      aliasWithPrefix, // Store alias with `@` prefix
       imageUrl,
       hashedPassword
     );
@@ -103,7 +112,7 @@ export class UserService {
     console.log(`Generated AuthToken: ${authToken.token}`);
 
     try {
-      await this.authTokenDAO.createAuthToken(authToken); // Log specific error from here
+      await this.authTokenDAO.createAuthToken(authToken);
       console.log("AuthToken stored successfully.");
     } catch (err) {
       console.error("Error storing authentication token:", err);

@@ -20,10 +20,10 @@ export class DynamoUserDAO extends DynamoBaseDAO implements UserDAO {
 
   // Adds a User to the Users table
   async createUser(user: User): Promise<void> {
-    // Strip `@` prefix from alias before saving
-    const aliasWithoutPrefix = user.alias.startsWith("@")
-      ? user.alias.substring(1)
-      : user.alias;
+    // Ensure alias has `@` prefix
+    const aliasWithPrefix = user.alias.startsWith("@")
+      ? user.alias
+      : `@${user.alias}`;
 
     if (!user.password) {
       throw new Error("Password is required to create a user.");
@@ -33,7 +33,7 @@ export class DynamoUserDAO extends DynamoBaseDAO implements UserDAO {
     const params = {
       TableName: this.tableName,
       Item: {
-        alias: { S: aliasWithoutPrefix },
+        alias: { S: aliasWithPrefix }, // Store alias with `@` prefix
         firstName: { S: user.firstName },
         lastName: { S: user.lastName },
         imageUrl: { S: user.imageUrl },
@@ -43,10 +43,10 @@ export class DynamoUserDAO extends DynamoBaseDAO implements UserDAO {
 
     try {
       await this.client.send(new PutItemCommand(params));
-      console.log(`User ${user.alias} added successfully.`);
+      console.log(`User ${aliasWithPrefix} added successfully.`);
     } catch (error) {
-      console.error(`Error adding user ${user.alias}:`, error);
-      throw new Error(`Failed to create user: ${user.alias}`);
+      console.error(`Error adding user ${aliasWithPrefix}:`, error);
+      throw new Error(`Failed to create user: ${aliasWithPrefix}`);
     }
   }
 
@@ -54,15 +54,15 @@ export class DynamoUserDAO extends DynamoBaseDAO implements UserDAO {
     user: User,
     hashedPassword: string
   ): Promise<void> {
-    // Strip `@` prefix from alias before saving
-    const aliasWithoutPrefix = user.alias.startsWith("@")
-      ? user.alias.substring(1)
-      : user.alias;
+    // Ensure alias has `@` prefix
+    const aliasWithPrefix = user.alias.startsWith("@")
+      ? user.alias
+      : `@${user.alias}`;
 
     const params = {
       TableName: this.tableName,
       Item: {
-        alias: { S: aliasWithoutPrefix },
+        alias: { S: aliasWithPrefix }, // Store alias with `@` prefix
         firstName: { S: user.firstName },
         lastName: { S: user.lastName },
         imageUrl: { S: user.imageUrl },
@@ -72,9 +72,11 @@ export class DynamoUserDAO extends DynamoBaseDAO implements UserDAO {
 
     try {
       await this.client.send(new PutItemCommand(params));
-      console.log(`User ${user.alias} with password created successfully.`);
+      console.log(
+        `User ${aliasWithPrefix} with password created successfully.`
+      );
     } catch (error) {
-      console.error(`Error creating user ${user.alias}:`, error);
+      console.error(`Error creating user ${aliasWithPrefix}:`, error);
       throw error;
     }
   }
