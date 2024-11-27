@@ -7,36 +7,28 @@ import { DynamoS3ProfileImageDAO } from "../../database/dao/s3/DynamoS3ProfileIm
 export const handler = async (
   request: LoginRequest
 ): Promise<LoginResponse> => {
-  // Instantiate the required DAOs
   const profileImageDAO = new DynamoS3ProfileImageDAO();
   const userDAO = new DynamoUserDAO(profileImageDAO);
   const authTokenDAO = new DynamoAuthTokenDAO();
 
-  // Inject the DAOs into the UserService
   const userService = new UserService(userDAO, authTokenDAO, profileImageDAO);
 
   try {
-    // Strip `@` from alias before logging in
-    const aliasWithoutPrefix = request.alias.startsWith("@")
-      ? request.alias.substring(1)
-      : request.alias;
+    // Ensure alias has `@` prefix before login
+    const aliasWithPrefix = request.alias.startsWith("@")
+      ? request.alias
+      : `@${request.alias}`;
 
     // Perform login
     const [user, authToken] = await userService.login(
-      aliasWithoutPrefix,
+      aliasWithPrefix,
       request.password
     );
-
-    // Add `@` back for the response
-    const userWithAtPrefix = {
-      ...user,
-      alias: `@${aliasWithoutPrefix}`,
-    };
 
     return {
       success: true,
       message: null,
-      user: userWithAtPrefix,
+      user: user,
       authToken: authToken,
     };
   } catch (error) {

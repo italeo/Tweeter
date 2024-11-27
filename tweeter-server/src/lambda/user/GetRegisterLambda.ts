@@ -62,33 +62,24 @@ export const handler = async (
   const userService = new UserService(userDAO, authTokenDAO, profileImageDAO);
 
   try {
-    // Strip `@` before passing to the service
-    const aliasWithoutPrefix = request.alias.startsWith("@")
-      ? request.alias.substring(1)
-      : request.alias;
+    // Ensure alias has `@` prefix before registration
+    const aliasWithPrefix = request.alias.startsWith("@")
+      ? request.alias
+      : `@${request.alias}`;
 
     const [user, authToken] = await userService.register(
       request.firstName,
       request.lastName,
-      aliasWithoutPrefix,
+      aliasWithPrefix,
       request.password,
       userImageBytes,
       request.imageFileExtension
     );
 
-    // Add `@` back for the response by creating a new User object
-    const userWithAtPrefix = {
-      firstName: user.firstName,
-      lastName: user.lastName,
-      alias: `@${aliasWithoutPrefix}`,
-      imageUrl: user.imageUrl,
-    };
-
-    // Use this object in your response instead of a full `User` object.
     return {
       success: true,
       message: null,
-      user: userWithAtPrefix,
+      user: user,
       authToken: authToken,
     };
   } catch (error) {
