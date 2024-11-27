@@ -19,16 +19,21 @@ export class DynamoFeedDAO extends DynamoBaseDAO implements FeedDAO {
     followerAliases: string[],
     status: Status
   ): Promise<void> {
-    const writeRequests = followerAliases.map((alias) => ({
-      PutRequest: {
-        Item: {
-          alias: { S: alias },
-          timestamp: { N: status.timestamp.toString() },
-          post: { S: status.post },
-          authorAlias: { S: status.user.alias },
+    const writeRequests = followerAliases.map((alias) => {
+      const aliasWithoutPrefix = alias.startsWith("@")
+        ? alias.substring(1)
+        : alias;
+      return {
+        PutRequest: {
+          Item: {
+            alias: { S: aliasWithoutPrefix },
+            timestamp: { N: status.timestamp.toString() },
+            post: { S: status.post },
+            authorAlias: { S: status.user.alias },
+          },
         },
-      },
-    }));
+      };
+    });
 
     const params = {
       RequestItems: {
@@ -52,14 +57,19 @@ export class DynamoFeedDAO extends DynamoBaseDAO implements FeedDAO {
     followerAliases: string[],
     timestamp: number
   ): Promise<void> {
-    const writeRequests = followerAliases.map((alias) => ({
-      DeleteRequest: {
-        Key: {
-          alias: { S: alias },
-          timestamp: { N: timestamp.toString() },
+    const writeRequests = followerAliases.map((alias) => {
+      const aliasWithoutPrefix = alias.startsWith("@")
+        ? alias.substring(1)
+        : alias;
+      return {
+        DeleteRequest: {
+          Key: {
+            alias: { S: aliasWithoutPrefix },
+            timestamp: { N: timestamp.toString() },
+          },
         },
-      },
-    }));
+      };
+    });
 
     const params = {
       RequestItems: {
@@ -77,32 +87,39 @@ export class DynamoFeedDAO extends DynamoBaseDAO implements FeedDAO {
       throw error;
     }
   }
-
   // Get feed for a user
   async getFeedForUser(
     userAlias: string,
     pageSize: number,
     lastItem?: Status
   ): Promise<{ statuses: Status[]; hasMore: boolean }> {
+    const aliasWithoutPrefix = userAlias.startsWith("@")
+      ? userAlias.substring(1)
+      : userAlias;
+
     const params: QueryCommandInput = {
       TableName: this.tableName,
       KeyConditionExpression: "alias = :alias",
       ExpressionAttributeValues: {
-        ":alias": { S: userAlias },
+        ":alias": { S: aliasWithoutPrefix },
       },
       Limit: pageSize,
       ExclusiveStartKey: lastItem
         ? {
-            alias: { S: userAlias },
+            alias: { S: aliasWithoutPrefix },
             timestamp: { N: lastItem.timestamp.toString() },
           }
         : undefined,
     };
 
     try {
+      // Log the query input parameters
+      console.log("DynamoDB Query Input for Feed:", params);
+
       console.log(`Fetching feed for user: ${userAlias}`);
       const data = await this.client.send(new QueryCommand(params));
 
+      // Log the raw data returned from DynamoDB
       console.log("Raw DynamoDB Data for Feed:", data.Items);
 
       const feedItems = data.Items || [];
@@ -110,8 +127,14 @@ export class DynamoFeedDAO extends DynamoBaseDAO implements FeedDAO {
         ...new Set(feedItems.map((item) => item.authorAlias?.S)),
       ].filter((alias): alias is string => !!alias); // Filter out undefined values
 
+      // Log the unique author aliases retrieved
+      console.log("Unique Author Aliases:", authorAliases);
+
       // Batch fetch user details
       const userMap = await this.batchFetchUserDetails(authorAliases);
+
+      // Log the fetched user details
+      console.log("Fetched User Details Map:", userMap);
 
       const statuses = feedItems
         .map((item) => {
@@ -130,9 +153,11 @@ export class DynamoFeedDAO extends DynamoBaseDAO implements FeedDAO {
         .filter((status): status is Status => status !== null);
 
       const hasMore = !!data.LastEvaluatedKey;
-      console.log(
-        `Feed retrieval complete. Status count: ${statuses.length}, Has more: ${hasMore}`
-      );
+
+      // Log the final processed statuses and pagination information
+      console.log(`Processed Feed Items:`, statuses);
+      console.log(`Has More Items: ${hasMore}`);
+
       return { statuses, hasMore };
     } catch (error) {
       console.error(`Error retrieving feed for user ${userAlias}:`, error);

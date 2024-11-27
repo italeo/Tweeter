@@ -126,11 +126,15 @@ export abstract class DynamoBaseDAO {
     );
     const resultMap = new Map<string, User>();
 
-    // Fetch uncached users
     if (uncachedAliases.length > 0) {
       console.log(`Batch fetching details for aliases: ${uncachedAliases}`);
 
-      const keys = uncachedAliases.map((alias) => ({ alias: { S: alias } }));
+      const keys = uncachedAliases.map((alias) => ({
+        alias: { S: alias.startsWith("@") ? alias.substring(1) : alias },
+      }));
+
+      console.log("Keys for BatchGetItemCommand:", keys);
+
       const params = { RequestItems: { Users: { Keys: keys } } };
 
       try {
@@ -138,17 +142,41 @@ export abstract class DynamoBaseDAO {
           new BatchGetItemCommand(params)
         );
         const items = response.Responses?.Users || [];
+        console.log("Raw DynamoDB Response for Users:", items);
 
+        // Process retrieved items
         for (const item of items) {
           const user = new User(
             item.firstName?.S || "Unknown",
             item.lastName?.S || "User",
             item.alias?.S || "",
-            item.imageUrl?.S || "",
+            item.imageUrl?.S || "default_image_url",
             item.passwordHash?.S || ""
           );
-          this.userCache.set(user.alias, user);
+          this.userCache.set(user.alias, user); // Add to cache
           resultMap.set(user.alias, user);
+        }
+
+        // Handle unprocessed keys
+        if (response.UnprocessedKeys?.Users?.Keys) {
+          console.warn(
+            "Unprocessed Keys:",
+            response.UnprocessedKeys.Users.Keys
+          );
+
+          // Extract aliases and filter out undefined values
+          const unprocessedAliases = response.UnprocessedKeys.Users.Keys.map(
+            (key) => key.alias?.S
+          ).filter((alias): alias is string => !!alias); // Ensure only non-undefined strings
+
+          // Retry unprocessed keys
+          const unprocessedResults = await this.batchFetchUserDetails(
+            unprocessedAliases
+          );
+
+          unprocessedResults.forEach((user, alias) =>
+            resultMap.set(alias, user)
+          );
         }
       } catch (error) {
         console.error("Error batch fetching user details:", error);
@@ -163,6 +191,7 @@ export abstract class DynamoBaseDAO {
       }
     }
 
+    console.log("Final User Map:", resultMap);
     return resultMap;
   }
 }

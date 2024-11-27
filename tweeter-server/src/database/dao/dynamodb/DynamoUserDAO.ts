@@ -20,6 +20,11 @@ export class DynamoUserDAO extends DynamoBaseDAO implements UserDAO {
 
   // Adds a User to the Users table
   async createUser(user: User): Promise<void> {
+    // Strip `@` prefix from alias before saving
+    const aliasWithoutPrefix = user.alias.startsWith("@")
+      ? user.alias.substring(1)
+      : user.alias;
+
     if (!user.password) {
       throw new Error("Password is required to create a user.");
     }
@@ -28,7 +33,7 @@ export class DynamoUserDAO extends DynamoBaseDAO implements UserDAO {
     const params = {
       TableName: this.tableName,
       Item: {
-        alias: { S: user.alias },
+        alias: { S: aliasWithoutPrefix },
         firstName: { S: user.firstName },
         lastName: { S: user.lastName },
         imageUrl: { S: user.imageUrl },
@@ -49,10 +54,15 @@ export class DynamoUserDAO extends DynamoBaseDAO implements UserDAO {
     user: User,
     hashedPassword: string
   ): Promise<void> {
+    // Strip `@` prefix from alias before saving
+    const aliasWithoutPrefix = user.alias.startsWith("@")
+      ? user.alias.substring(1)
+      : user.alias;
+
     const params = {
       TableName: this.tableName,
       Item: {
-        alias: { S: user.alias },
+        alias: { S: aliasWithoutPrefix },
         firstName: { S: user.firstName },
         lastName: { S: user.lastName },
         imageUrl: { S: user.imageUrl },
@@ -105,10 +115,15 @@ export class DynamoUserDAO extends DynamoBaseDAO implements UserDAO {
 
   // Gets/retrieves a User by their alias
   async getUserByAlias(alias: string): Promise<User | null> {
+    // Strip `@` prefix from alias for query
+    const aliasWithoutPrefix = alias.startsWith("@")
+      ? alias.substring(1)
+      : alias;
+
     const params = {
       TableName: this.tableName,
       Key: {
-        alias: { S: alias },
+        alias: { S: aliasWithoutPrefix },
       },
     };
 
@@ -118,7 +133,7 @@ export class DynamoUserDAO extends DynamoBaseDAO implements UserDAO {
         return new User(
           result.Item.firstName?.S || "Unknown",
           result.Item.lastName?.S || "Unknown",
-          alias,
+          `@${aliasWithoutPrefix}`, // Add `@` prefix back
           result.Item.imageUrl?.S || "",
           result.Item.passwordHash?.S || "defaultPasswordHash"
         );
@@ -132,10 +147,15 @@ export class DynamoUserDAO extends DynamoBaseDAO implements UserDAO {
   }
 
   async getPasswordHash(alias: string): Promise<string> {
+    // Strip `@` prefix from alias for query
+    const aliasWithoutPrefix = alias.startsWith("@")
+      ? alias.substring(1)
+      : alias;
+
     const params = {
       TableName: this.tableName,
       Key: {
-        alias: { S: alias },
+        alias: { S: aliasWithoutPrefix },
       },
       ProjectionExpression: "passwordHash",
     };

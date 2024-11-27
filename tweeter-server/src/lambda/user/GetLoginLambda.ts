@@ -15,15 +15,37 @@ export const handler = async (
   // Inject the DAOs into the UserService
   const userService = new UserService(userDAO, authTokenDAO, profileImageDAO);
 
-  const [user, authToken] = await userService.login(
-    request.alias,
-    request.password
-  );
+  try {
+    // Strip `@` from alias before logging in
+    const aliasWithoutPrefix = request.alias.startsWith("@")
+      ? request.alias.substring(1)
+      : request.alias;
 
-  return {
-    success: true,
-    message: null,
-    user: user,
-    authToken: authToken,
-  };
+    // Perform login
+    const [user, authToken] = await userService.login(
+      aliasWithoutPrefix,
+      request.password
+    );
+
+    // Add `@` back for the response
+    const userWithAtPrefix = {
+      ...user,
+      alias: `@${aliasWithoutPrefix}`,
+    };
+
+    return {
+      success: true,
+      message: null,
+      user: userWithAtPrefix,
+      authToken: authToken,
+    };
+  } catch (error) {
+    console.error("Error during login:", error);
+    return {
+      success: false,
+      message: "Login failed. Please check your alias or password.",
+      user: { alias: "", firstName: "", lastName: "", imageUrl: "" },
+      authToken: { token: "", timestamp: 0 },
+    };
+  }
 };

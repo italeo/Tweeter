@@ -12,12 +12,13 @@ const client = new DynamoDBClient({ region: "us-west-2" });
 // Add Users
 //
 const addUser = async (user: User) => {
+  const aliasWithoutAt = user.alias.replace(/^@/, ""); // Remove '@' from alias
   const hashedPassword = await bcrypt.hash(user.password, 10);
 
   const params = {
     TableName: "Users",
     Item: {
-      alias: { S: user.alias },
+      alias: { S: aliasWithoutAt },
       firstName: { S: user.firstName },
       lastName: { S: user.lastName },
       imageUrl: { S: user.imageUrl },
@@ -29,20 +30,20 @@ const addUser = async (user: User) => {
 
   try {
     await client.send(new PutItemCommand(params));
-    console.log(`User ${user.alias} added successfully!`);
+    console.log(`User ${aliasWithoutAt} added successfully!`);
   } catch (error) {
-    console.error(`Error adding user ${user.alias}:`, error);
+    console.error(`Error adding user ${aliasWithoutAt}:`, error);
   }
 };
 
 //
-// Increment Followers Count
-//
 const incrementFollowersCount = async (alias: string) => {
+  const aliasWithoutAt = alias.replace(/^@/, ""); // Remove '@' if present
+
   const params = {
     TableName: "Users",
     Key: {
-      alias: { S: alias },
+      alias: { S: aliasWithoutAt },
     },
     UpdateExpression: "SET followersCount = followersCount + :inc",
     ExpressionAttributeValues: {
@@ -52,23 +53,22 @@ const incrementFollowersCount = async (alias: string) => {
 
   try {
     await client.send(new UpdateItemCommand(params));
-    console.log(`Followers count incremented for user ${alias}.`);
+    console.log(`Followers count incremented for user ${aliasWithoutAt}.`);
   } catch (error) {
     console.error(
-      `Error incrementing followers count for user ${alias}:`,
+      `Error incrementing followers count for user ${aliasWithoutAt}:`,
       error
     );
   }
 };
 
-//
-// Increment Following Count
-//
 const incrementFollowingCount = async (alias: string) => {
+  const aliasWithoutAt = alias.replace(/^@/, ""); // Remove '@' if present
+
   const params = {
     TableName: "Users",
     Key: {
-      alias: { S: alias },
+      alias: { S: aliasWithoutAt },
     },
     UpdateExpression: "SET followingCount = followingCount + :inc",
     ExpressionAttributeValues: {
@@ -78,10 +78,10 @@ const incrementFollowingCount = async (alias: string) => {
 
   try {
     await client.send(new UpdateItemCommand(params));
-    console.log(`Following count incremented for user ${alias}.`);
+    console.log(`Following count incremented for user ${aliasWithoutAt}.`);
   } catch (error) {
     console.error(
-      `Error incrementing following count for user ${alias}:`,
+      `Error incrementing following count for user ${aliasWithoutAt}:`,
       error
     );
   }
@@ -91,11 +91,14 @@ const incrementFollowingCount = async (alias: string) => {
 // Add Followers/Followees
 //
 const addFollow = async (followeeAlias: string, followerAlias: string) => {
+  const followeeAliasWithoutAt = followeeAlias.replace(/^@/, "");
+  const followerAliasWithoutAt = followerAlias.replace(/^@/, "");
+
   const params = {
     TableName: "Followers",
     Item: {
-      followeeAlias: { S: followeeAlias },
-      followerAlias: { S: followerAlias },
+      followeeAlias: { S: followeeAliasWithoutAt },
+      followerAlias: { S: followerAliasWithoutAt },
     },
   };
 
@@ -106,8 +109,8 @@ const addFollow = async (followeeAlias: string, followerAlias: string) => {
     );
 
     // Update followersCount for followee and followingCount for follower
-    await incrementFollowersCount(followeeAlias);
-    await incrementFollowingCount(followerAlias);
+    await incrementFollowersCount(followeeAliasWithoutAt);
+    await incrementFollowingCount(followerAliasWithoutAt);
   } catch (error) {
     console.error(
       `Error adding follow relationship: ${followerAlias} -> ${followeeAlias}:`,
@@ -120,10 +123,12 @@ const addFollow = async (followeeAlias: string, followerAlias: string) => {
 // Add Status
 //
 const addStatus = async (status: Status) => {
+  const aliasWithoutAt = status.user.alias.replace(/^@/, "");
+
   const params = {
     TableName: "Statuses",
     Item: {
-      alias: { S: status.user.alias },
+      alias: { S: aliasWithoutAt },
       timestamp: { N: status.timestamp.toString() },
       post: { S: status.post },
     },
@@ -131,9 +136,9 @@ const addStatus = async (status: Status) => {
 
   try {
     await client.send(new PutItemCommand(params));
-    console.log(`Status for user ${status.user.alias} added successfully!`);
+    console.log(`Status for user ${aliasWithoutAt} added successfully!`);
   } catch (error) {
-    console.error(`Error adding status for user ${status.user.alias}:`, error);
+    console.error(`Error adding status for user ${aliasWithoutAt}:`, error);
   }
 };
 
@@ -141,24 +146,27 @@ const addStatus = async (status: Status) => {
 // Add Feeds
 //
 const addFeedItem = async (userAlias: string, status: Status) => {
+  const aliasWithoutAt = userAlias.replace(/^@/, "");
+  const authorAliasWithAt = `@${status.user.alias.replace(/^@/, "")}`; // Add '@' dynamically
+
   const params = {
     TableName: "Feed",
     Item: {
-      alias: { S: userAlias },
+      alias: { S: aliasWithoutAt },
       timestamp: { N: status.timestamp.toString() },
       post: { S: status.post },
-      authorAlias: { S: status.user.alias },
+      authorAlias: { S: authorAliasWithAt },
     },
   };
 
   try {
     await client.send(new PutItemCommand(params));
     console.log(
-      `Feed item added for user ${userAlias} from ${status.user.alias}!`
+      `Feed item added for user ${aliasWithoutAt} from ${authorAliasWithAt}!`
     );
   } catch (error) {
     console.error(
-      `Error adding feed item for user ${userAlias} from ${status.user.alias}:`,
+      `Error adding feed item for user ${aliasWithoutAt} from ${authorAliasWithAt}:`,
       error
     );
   }

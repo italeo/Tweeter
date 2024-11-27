@@ -1,4 +1,4 @@
-import { RegisterRequest, RegisterResponse } from "tweeter-shared";
+import { RegisterRequest, RegisterResponse, User } from "tweeter-shared";
 import { UserService } from "../../model/service/UserService";
 import { DynamoS3ProfileImageDAO } from "../../database/dao/s3/DynamoS3ProfileImageDAO";
 import { DynamoUserDAO } from "../../database/dao/dynamodb/DynamoUserDAO";
@@ -8,17 +8,15 @@ import { Buffer } from "buffer";
 export const handler = async (
   request: RegisterRequest
 ): Promise<RegisterResponse> => {
-  // Log payload structure (excluding sensitive data)
   console.log("Received payload:", {
     firstName: request.firstName,
     lastName: request.lastName,
     alias: request.alias,
-    password: "REDACTED", // Avoid logging sensitive data
+    password: "REDACTED",
     userImageBase64Length: request.userImageBase64?.length || 0,
     imageFileExtension: request.imageFileExtension,
   });
 
-  // Validate request fields
   if (
     !request.firstName ||
     !request.lastName ||
@@ -27,13 +25,10 @@ export const handler = async (
     !request.userImageBase64 ||
     !request.imageFileExtension
   ) {
-    console.error(
-      "Missing required fields in the registration request:",
-      request
-    );
+    console.error("Missing required fields in the registration request.");
     return {
       success: false,
-      message: "Missing required fields in the registration request.",
+      message: "Missing required fields.",
       user: {
         alias: "",
         firstName: "",
@@ -47,76 +42,62 @@ export const handler = async (
     };
   }
 
-  // Convert Base64 image to Buffer
   let userImageBytes: Buffer;
   try {
-    console.log("Decoding Base64 user image...");
     userImageBytes = Buffer.from(request.userImageBase64, "base64");
-    console.log("Decoded image size:", userImageBytes.length, "bytes");
   } catch (error) {
-    console.error("Failed to convert userImageBase64 to bytes:", error);
+    console.error("Failed to decode image:", error);
     return {
       success: false,
-      message: "Invalid user image data. Please try again.",
-      user: {
-        alias: "",
-        firstName: "",
-        lastName: "",
-        imageUrl: "",
-      },
-      authToken: {
-        token: "",
-        timestamp: 0,
-      },
+      message: "Invalid user image.",
+      user: { alias: "", firstName: "", lastName: "", imageUrl: "" },
+      authToken: { token: "", timestamp: 0 },
     };
   }
 
-  // Instantiate DAOs
   const profileImageDAO = new DynamoS3ProfileImageDAO();
   const userDAO = new DynamoUserDAO(profileImageDAO);
   const authTokenDAO = new DynamoAuthTokenDAO();
 
-  // Inject the DAOs into the UserService
   const userService = new UserService(userDAO, authTokenDAO, profileImageDAO);
 
-  // Handle registration logic
   try {
+    // Strip `@` before passing to the service
+    const aliasWithoutPrefix = request.alias.startsWith("@")
+      ? request.alias.substring(1)
+      : request.alias;
+
     const [user, authToken] = await userService.register(
       request.firstName,
       request.lastName,
-      request.alias,
+      aliasWithoutPrefix,
       request.password,
       userImageBytes,
       request.imageFileExtension
     );
 
-    // Log success for debugging
-    console.log("Registration successful:", { user, authToken });
+    // Add `@` back for the response by creating a new User object
+    const userWithAtPrefix = {
+      firstName: user.firstName,
+      lastName: user.lastName,
+      alias: `@${aliasWithoutPrefix}`,
+      imageUrl: user.imageUrl,
+    };
 
-    // Return success response
+    // Use this object in your response instead of a full `User` object.
     return {
       success: true,
       message: null,
-      user: user,
+      user: userWithAtPrefix,
       authToken: authToken,
     };
   } catch (error) {
-    console.error("Error during user registration:", error);
-
-    // Return error response
+    console.error("Error during registration:", error);
     return {
       success: false,
-      message: "An error occurred during registration. Please try again.",
-      user: {
-        alias: "",
-        firstName: "",
-        lastName: "",
-        imageUrl: "",
-      },
-      authToken: {
-        token: "",
-        timestamp: 0,
-      },
+      message: "Registration failed.",
+      user: { alias: "", firstName: "", lastName: "", imageUrl: "" },
+      authToken: { token: "", timestamp: 0 },
     };
   }
 };
