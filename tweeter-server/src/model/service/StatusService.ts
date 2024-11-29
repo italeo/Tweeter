@@ -106,30 +106,34 @@ export class StatusService {
   }
 
   public async postStatus(token: string, newStatus: StatusDto): Promise<void> {
-    console.log("Posting new status:", newStatus);
+    console.log("Received request to post status:", JSON.stringify(newStatus));
 
     const status = Status.fromDto(newStatus);
-
-    // Validate the conversion
     if (!status) {
       throw new Error("Invalid StatusDto: Unable to convert to Status.");
     }
 
-    // Save the status to the user's story
     try {
+      // Save the status to the user's story
+      console.log("Saving status to Story for user:", status.user.alias);
       await this.statusDAO.createStatus(status);
-      console.log("Status saved to story.");
+      console.log("Status saved successfully for user:", status.user.alias);
 
+      // Fetch the followers of the user
       const followerAliases = await this.getFollowerAliases(status.user.alias);
-      console.log(`Adding status to ${followerAliases.length} feeds.`);
-      await this.feedDAO.addStatusToFeed(followerAliases, status);
+
+      // Only add the status to feeds if there are followers
+      if (followerAliases.length > 0) {
+        console.log(`Adding status to ${followerAliases.length} feeds.`);
+        await this.feedDAO.addStatusToFeed(followerAliases, status);
+      } else {
+        console.log(
+          `No followers found for user ${status.user.alias}. Skipping feed update.`
+        );
+      }
     } catch (error) {
       console.error("Error posting status:", error);
-      throw new Error(
-        `Error posting status: ${
-          error instanceof Error ? error.message : String(error)
-        }`
-      );
+      throw error;
     }
   }
 

@@ -49,11 +49,17 @@ export abstract class PagedItemPresenter<T, U> extends Presenter<
   ): Promise<void> {
     this.doFailureReportingOperation(async () => {
       if (this.hasMoreItems) {
-        let [newItems, hasMore] = await this.getMoreItems(authToken, userAlias);
+        const [newItems, hasMore] = await this.getMoreItems(
+          authToken,
+          userAlias
+        );
 
         this.hasMoreItems = hasMore;
-        this.lastItem = newItems[newItems.length - 1];
-        this.view.addItems(newItems);
+
+        if (newItems.length > 0) {
+          this.lastItem = newItems[newItems.length - 1]; // Update to the last fetched item
+          this.view.addItems(newItems);
+        }
       }
     }, this.getItemDescription());
   }

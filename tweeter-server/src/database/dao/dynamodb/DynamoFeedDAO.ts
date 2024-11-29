@@ -19,6 +19,11 @@ export class DynamoFeedDAO extends DynamoBaseDAO implements FeedDAO {
     followerAliases: string[],
     status: Status
   ): Promise<void> {
+    if (followerAliases.length === 0) {
+      console.log("No followers to update feeds for. Skipping batch write.");
+      return;
+    }
+
     const writeRequests = followerAliases.map((alias) => {
       const aliasWithoutPrefix = alias.startsWith("@")
         ? alias.substring(1)

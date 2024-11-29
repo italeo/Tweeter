@@ -30,8 +30,29 @@ const UserItemScroller = <T, U>(props: Props<T, U>) => {
 
   // New presenter to remove dups
   const listener: PagedItemView<T> = {
-    addItems: (newItems: T[]) =>
-      setItems([...itemsReference.current, ...newItems]),
+    addItems: (newItems: T[]) => {
+      console.log("New items to be added:", newItems); // Log new items fetched
+      console.log(
+        "Existing items before adding new ones:",
+        itemsReference.current
+      ); // Log current items
+
+      // Deduplicate based on a unique property (e.g., `id` or `timestamp`)
+      const existingIds = new Set(
+        itemsReference.current.map((item: any) => item.id || item.timestamp)
+      );
+      const uniqueItems = newItems.filter(
+        (item: any) => !existingIds.has(item.id || item.timestamp)
+      );
+
+      console.log("Filtered unique items:", uniqueItems); // Log unique items
+      setItems([...itemsReference.current, ...uniqueItems]);
+
+      console.log("Updated items after adding:", [
+        ...itemsReference.current,
+        ...uniqueItems,
+      ]); // Log the combined array
+    },
     displayErrorMessage: displayErrorMessage,
   };
 

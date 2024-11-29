@@ -51,7 +51,15 @@ export class StatusService {
       token: authToken.token,
       status: newStatus.toDto() as StatusDto,
     };
-    // Pause so we can see the logging out message. Remove when connected to the server
-    await this.serverFacade.postStatus(request.token, request.status);
+
+    console.log("Sending post status request:", request);
+
+    try {
+      await this.serverFacade.postStatus(request.token, request.status);
+      console.log("Status successfully posted.");
+    } catch (error) {
+      console.error("Error in postStatus:", error);
+      throw error;
+    }
   }
 }
