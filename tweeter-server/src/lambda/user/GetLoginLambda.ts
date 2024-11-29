@@ -19,12 +19,15 @@ export const handler = async (
       ? request.alias
       : `@${request.alias}`;
 
+    console.log(`Attempting login for alias: ${aliasWithPrefix}`);
+
     // Perform login
     const [user, authToken] = await userService.login(
       aliasWithPrefix,
       request.password
     );
 
+    console.log(`Login successful for alias: ${aliasWithPrefix}`);
     return {
       success: true,
       message: null,
@@ -32,7 +35,8 @@ export const handler = async (
       authToken: authToken,
     };
   } catch (error) {
-    console.error("Error during login:", error);
+    console.error(`Login failed for alias: ${request.alias}`, error);
+
     return {
       success: false,
       message: "Login failed. Please check your alias or password.",

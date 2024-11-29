@@ -117,56 +117,57 @@ export class DynamoUserDAO extends DynamoBaseDAO implements UserDAO {
 
   // Gets/retrieves a User by their alias
   async getUserByAlias(alias: string): Promise<User | null> {
-    // Strip `@` prefix from alias for query
-    const aliasWithoutPrefix = alias.startsWith("@")
-      ? alias.substring(1)
-      : alias;
+    // Ensure alias includes `@` prefix
+    const aliasWithPrefix = alias.startsWith("@") ? alias : `@${alias}`;
 
     const params = {
       TableName: this.tableName,
       Key: {
-        alias: { S: aliasWithoutPrefix },
+        alias: { S: aliasWithPrefix },
       },
     };
 
     try {
+      console.log("DynamoDB Query Params:", JSON.stringify(params));
       const result = await this.client.send(new GetItemCommand(params));
+      console.log("DynamoDB Query Result:", JSON.stringify(result));
+
       if (result.Item) {
         return new User(
           result.Item.firstName?.S || "Unknown",
           result.Item.lastName?.S || "Unknown",
-          `@${aliasWithoutPrefix}`, // Add `@` prefix back
+          aliasWithPrefix, // Return alias with `@` prefix
           result.Item.imageUrl?.S || "",
           result.Item.passwordHash?.S || "defaultPasswordHash"
         );
       }
-      console.warn(`User with alias ${alias} not found.`);
+
+      console.warn(`User with alias ${aliasWithPrefix} not found.`);
       return null; // Return null if user does not exist
     } catch (error) {
-      console.error(`Error fetching user by alias ${alias}:`, error);
-      throw new Error(`Failed to fetch user: ${alias}`);
+      console.error(`Error fetching user by alias ${aliasWithPrefix}:`, error);
+      throw new Error(`Failed to fetch user: ${aliasWithPrefix}`);
     }
   }
 
   async getPasswordHash(alias: string): Promise<string> {
-    // Strip `@` prefix from alias for query
-    const aliasWithoutPrefix = alias.startsWith("@")
-      ? alias.substring(1)
-      : alias;
-
     const params = {
       TableName: this.tableName,
       Key: {
-        alias: { S: aliasWithoutPrefix },
+        alias: { S: alias }, // Use the alias as is (with the `@` prefix)
       },
       ProjectionExpression: "passwordHash",
     };
 
     try {
+      console.info("DynamoDB Query Params:", params); // Log query parameters
       const result = await this.client.send(new GetItemCommand(params));
+      console.info("DynamoDB Query Result:", result); // Log query result
+
       if (result.Item && result.Item.passwordHash?.S) {
         return result.Item.passwordHash.S;
       }
+      console.warn(`Password hash not found for alias: ${alias}`);
       throw new Error("Password hash not found for user.");
     } catch (error) {
       console.error(`Error fetching password hash for alias ${alias}:`, error);
