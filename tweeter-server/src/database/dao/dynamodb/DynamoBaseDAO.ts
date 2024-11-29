@@ -121,12 +121,7 @@ export abstract class DynamoBaseDAO {
   protected async batchFetchUserDetails(
     aliases: string[]
   ): Promise<Map<string, User>> {
-    // Remove @ prefix for all aliases
-    const formattedAliases = aliases.map((alias) =>
-      alias.startsWith("@") ? alias.substring(1) : alias
-    );
-
-    // Filter out already cached aliases
+    const formattedAliases = aliases; // Assume aliases include '@' if stored in DB
     const uncachedAliases = formattedAliases.filter(
       (alias) => !this.userCache.has(alias)
     );
@@ -135,12 +130,9 @@ export abstract class DynamoBaseDAO {
     if (uncachedAliases.length > 0) {
       console.log(`Batch fetching details for aliases: ${uncachedAliases}`);
 
-      // Prepare keys for BatchGetItemCommand
       const keys = uncachedAliases.map((alias) => ({
-        alias: { S: alias }, // Use formatted alias without '@'
+        alias: { S: alias }, // Ensure key matches the table schema
       }));
-
-      console.log("Keys for BatchGetItemCommand:", keys);
 
       const params = { RequestItems: { Users: { Keys: keys } } };
 
@@ -149,9 +141,8 @@ export abstract class DynamoBaseDAO {
           new BatchGetItemCommand(params)
         );
         const items = response.Responses?.Users || [];
-        console.log("Raw DynamoDB Response for Users:", items);
+        console.log("DynamoDB BatchGetItem Response:", items);
 
-        // Process retrieved items
         for (const item of items) {
           const user = new User(
             item.firstName?.S || "Unknown",
@@ -160,29 +151,46 @@ export abstract class DynamoBaseDAO {
             item.imageUrl?.S || "default_image_url",
             item.passwordHash?.S || ""
           );
-          this.userCache.set(user.alias, user); // Add to cache
-          resultMap.set(user.alias, user); // Add to result map
+          this.userCache.set(user.alias, user);
+          resultMap.set(user.alias, user);
         }
 
-        // Handle unprocessed keys
         if (response.UnprocessedKeys?.Users?.Keys) {
           console.warn(
             "Unprocessed Keys:",
             response.UnprocessedKeys.Users.Keys
           );
+          let retryCount = 0;
+          const MAX_RETRIES = 3;
 
-          // Retry unprocessed keys
-          const unprocessedAliases = response.UnprocessedKeys.Users.Keys.map(
-            (key) => key.alias?.S
-          ).filter((alias): alias is string => !!alias); // Ensure only non-undefined strings
+          while (
+            response.UnprocessedKeys.Users.Keys &&
+            retryCount < MAX_RETRIES
+          ) {
+            retryCount++;
+            console.log(`Retrying unprocessed keys (Attempt ${retryCount})`);
+            await new Promise((resolve) =>
+              setTimeout(resolve, 1000 * Math.pow(2, retryCount))
+            );
 
-          const unprocessedResults = await this.batchFetchUserDetails(
-            unprocessedAliases
-          );
-
-          unprocessedResults.forEach((user, alias) =>
-            resultMap.set(alias, user)
-          );
+            const retryResponse = await this.client.send(
+              new BatchGetItemCommand({
+                RequestItems: response.UnprocessedKeys,
+              })
+            );
+            const retryItems = retryResponse.Responses?.Users || [];
+            for (const item of retryItems) {
+              const retryUser = new User(
+                item.firstName?.S || "Unknown",
+                item.lastName?.S || "User",
+                item.alias?.S || "",
+                item.imageUrl?.S || "default_image_url",
+                item.passwordHash?.S || ""
+              );
+              this.userCache.set(retryUser.alias, retryUser);
+              resultMap.set(retryUser.alias, retryUser);
+            }
+          }
         }
       } catch (error) {
         console.error("Error batch fetching user details:", error);
@@ -190,7 +198,6 @@ export abstract class DynamoBaseDAO {
       }
     }
 
-    // Add cached users to result map
     for (const alias of formattedAliases) {
       if (this.userCache.has(alias)) {
         resultMap.set(alias, this.userCache.get(alias)!);

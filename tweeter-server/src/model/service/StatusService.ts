@@ -33,7 +33,7 @@ export class StatusService {
     if (lastItem) {
       try {
         const status = Status.fromDto(lastItem);
-        safeLastItem = status || undefined; // Convert null to undefined
+        safeLastItem = status || undefined;
       } catch (error) {
         console.error("Error converting lastItem to Status:", error);
         throw new Error(
@@ -46,10 +46,12 @@ export class StatusService {
 
     try {
       const { statuses, lastKey } = await this.statusDAO.getStatusesByUser(
-        userAlias,
+        userAlias.toLowerCase(), // Normalize alias
         pageSize,
         safeLastItem
       );
+      console.log("Statuses retrieved:", statuses);
+
       const dtos = statuses.map((status) => status.toDto());
       return [dtos, !!lastKey];
     } catch (error) {
@@ -68,18 +70,32 @@ export class StatusService {
     pageSize: number,
     lastItem: StatusDto | null
   ): Promise<[StatusDto[], boolean]> {
-    const safeLastItem = lastItem
-      ? Status.fromDto(lastItem) || undefined
-      : undefined;
+    console.log(
+      `Loading feed items for user: ${userAlias}, pageSize: ${pageSize}, lastItem:`,
+      lastItem
+    );
+
+    let safeLastItem: Status | undefined;
+    if (lastItem) {
+      try {
+        safeLastItem = Status.fromDto(lastItem) || undefined;
+      } catch (error) {
+        console.error("Error converting lastItem to Status:", error);
+        throw new Error(
+          `Error converting lastItem: ${
+            error instanceof Error ? error.message : String(error)
+          }`
+        );
+      }
+    }
 
     try {
       const { statuses, hasMore } = await this.feedDAO.getFeedForUser(
-        userAlias,
+        userAlias.toLowerCase(), // Normalize alias
         pageSize,
         safeLastItem
       );
-
-      console.log(`Successfully loaded feed items for ${userAlias}.`);
+      console.log("Feed statuses retrieved:", statuses);
 
       const dtos = statuses.map((status) => status.toDto());
       return [dtos, hasMore];
@@ -90,9 +106,8 @@ export class StatusService {
   }
 
   public async postStatus(token: string, newStatus: StatusDto): Promise<void> {
-    // Pause so we can see the logging out message. Remove when connected to the server
-    // await new Promise((f) => setTimeout(f, 2000));
-    // Will need the actual server call in the future
+    console.log("Posting new status:", newStatus);
+
     const status = Status.fromDto(newStatus);
 
     // Validate the conversion
@@ -103,22 +118,36 @@ export class StatusService {
     // Save the status to the user's story
     try {
       await this.statusDAO.createStatus(status);
+      console.log("Status saved to story.");
 
       const followerAliases = await this.getFollowerAliases(status.user.alias);
+      console.log(`Adding status to ${followerAliases.length} feeds.`);
       await this.feedDAO.addStatusToFeed(followerAliases, status);
-    } catch (err) {
-      throw new Error("Error posting status.");
+    } catch (error) {
+      console.error("Error posting status:", error);
+      throw new Error(
+        `Error posting status: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
     }
   }
 
-  // ------------ Helper function --------------------------------
   private async getFollowerAliases(userAlias: string): Promise<string[]> {
+    console.log(`Fetching followers for user: ${userAlias}`);
     try {
-      const followers = await this.followDAO.getFollowers(userAlias, 10000);
+      const followers = await this.followDAO.getFollowers(
+        userAlias.toLowerCase(), // Normalize alias
+        10000
+      );
       return followers.followers.map((follower) => follower.alias);
-    } catch (err) {
-      throw new Error("Error retrieving follower aliases.");
+    } catch (error) {
+      console.error("Error retrieving follower aliases:", error);
+      throw new Error(
+        `Error retrieving follower aliases: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
     }
   }
-  // ---------------------------------------------------------------
 }
