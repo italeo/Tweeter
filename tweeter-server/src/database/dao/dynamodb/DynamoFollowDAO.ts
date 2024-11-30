@@ -1,5 +1,4 @@
 import {
-  BatchWriteItemCommand,
   QueryCommand,
   QueryCommandInput,
   PutItemCommand,
@@ -21,6 +20,19 @@ export class DynamoFollowDAO extends DynamoBaseDAO implements FollowDAO {
     followerAlias: string,
     followeeAlias: string
   ): Promise<void> {
+    // Check if the relationship already exists
+    const isFollowing = await this.isUserFollowing(
+      followerAlias,
+      followeeAlias
+    );
+
+    if (isFollowing) {
+      console.warn(
+        `User ${followerAlias} is already following ${followeeAlias}`
+      );
+      return;
+    }
+
     const params = {
       TableName: this.tableName,
       Item: {
@@ -48,6 +60,19 @@ export class DynamoFollowDAO extends DynamoBaseDAO implements FollowDAO {
     followerAlias: string,
     followeeAlias: string
   ): Promise<void> {
+    // Check if the relationship exists
+    const isFollowing = await this.isUserFollowing(
+      followerAlias,
+      followeeAlias
+    );
+
+    if (!isFollowing) {
+      console.warn(
+        `No follow relationship exists: ${followerAlias} -> ${followeeAlias}`
+      );
+      return;
+    }
+
     const params = {
       TableName: this.tableName,
       Key: {
@@ -94,16 +119,15 @@ export class DynamoFollowDAO extends DynamoBaseDAO implements FollowDAO {
 
     try {
       const data = await this.client.send(new QueryCommand(params));
+
+      // Fetch user details for followers
       const followers: (UserDto | null)[] = await Promise.all(
         (data.Items || []).map(async (item) => {
-          const user = await this.fetchUserDetails(
-            item.followerAlias?.S || "unknown_alias"
-          );
+          const userAlias = item.followerAlias?.S || "unknown_alias";
+          const user = await this.fetchUserDetails(userAlias); // Use fetchUserDetails
           if (!user) {
-            console.error(
-              `Invalid or missing user for followerAlias: ${item.followerAlias?.S}`
-            );
-            return null; // Skip invalid users
+            console.warn(`User details not found for alias: ${userAlias}`);
+            return null; // Skip invalid entries
           }
           return {
             alias: user.alias,
@@ -133,12 +157,6 @@ export class DynamoFollowDAO extends DynamoBaseDAO implements FollowDAO {
     pageSize: number,
     lastItem?: UserDto
   ): Promise<{ followees: UserDto[]; hasMore: boolean }> {
-    if (lastItem && !lastItem.alias) {
-      console.error("Invalid lastItem received:", lastItem);
-      throw new Error("Invalid lastItem for ExclusiveStartKey.");
-    }
-    console.log("LastItem received for ExclusiveStartKey:", lastItem);
-
     const params: QueryCommandInput = {
       TableName: this.tableName,
       IndexName: "FolloweeIndex",
@@ -155,22 +173,17 @@ export class DynamoFollowDAO extends DynamoBaseDAO implements FollowDAO {
         : undefined,
     };
 
-    console.log("DynamoDB Query Parameters:", JSON.stringify(params, null, 2));
-
     try {
       const data = await this.client.send(new QueryCommand(params));
-      console.log("DynamoDB Query Result:", data);
 
+      // Fetch user details for followees
       const followees: (UserDto | null)[] = await Promise.all(
         (data.Items || []).map(async (item) => {
-          const user = await this.fetchUserDetails(
-            item.followeeAlias?.S || "unknown_alias"
-          );
+          const userAlias = item.followeeAlias?.S || "unknown_alias";
+          const user = await this.fetchUserDetails(userAlias); // Use fetchUserDetails
           if (!user) {
-            console.error(
-              `Invalid or missing user for followeeAlias: ${item.followeeAlias?.S}`
-            );
-            return null; // Skip invalid users
+            console.warn(`User details not found for alias: ${userAlias}`);
+            return null; // Skip invalid entries
           }
           return {
             alias: user.alias,
@@ -190,7 +203,7 @@ export class DynamoFollowDAO extends DynamoBaseDAO implements FollowDAO {
       return { followees: validFollowees, hasMore };
     } catch (error) {
       console.error(`Error retrieving followees for ${userAlias}:`, error);
-      throw new Error("Error loading followees.");
+      throw error;
     }
   }
 
@@ -231,6 +244,7 @@ export class DynamoFollowDAO extends DynamoBaseDAO implements FollowDAO {
         ":followeeAlias": { S: userAlias },
       },
       Select: "COUNT",
+      ConsistentRead: false, // Ensure this is false or omit this line
     };
 
     try {
@@ -252,6 +266,7 @@ export class DynamoFollowDAO extends DynamoBaseDAO implements FollowDAO {
         ":followerAlias": { S: userAlias },
       },
       Select: "COUNT",
+      ConsistentRead: false, // Ensure this is false or omit this line
     };
 
     try {

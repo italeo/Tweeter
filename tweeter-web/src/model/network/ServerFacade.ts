@@ -108,17 +108,16 @@ export class ServerFacade {
     user: UserDto,
     selectedUser: UserDto
   ): Promise<boolean> {
-    const request = {
-      token: token,
-      user: user,
-      selectedUser: selectedUser,
-    };
+    const request = { token, user, selectedUser };
+    console.log("GetIsFollowerStatus Request Payload:", request);
 
     try {
       const response = await this.clientCommunicator.doPost<
         GetIsFollowerStatusRequest,
         GetIsFollowerStatusResponse
       >(request, "/follower/status");
+
+      console.log("GetIsFollowerStatus Response:", response);
 
       if (response.success) {
         return response.isFollower;
@@ -129,78 +128,50 @@ export class ServerFacade {
         );
       }
     } catch (error) {
-      if (error instanceof Error) {
-        console.error("Client communicator POST failed:", error.message);
-        throw new Error("Client communicator POST failed: " + error.message);
-      } else {
-        console.error(
-          "Client communicator POST failed with unknown error:",
-          error
-        );
-        throw new Error("Client communicator POST failed with unknown error");
-      }
+      console.error("GetIsFollowerStatus error:", error);
+      throw error;
     }
   }
 
   public async getFolloweeCount(token: string, user: UserDto): Promise<number> {
     const request = { token, user };
+    console.log("GetFolloweeCount Request Payload:", request);
 
-    try {
-      const response = await this.clientCommunicator.doPost<
-        GetFolloweeCountRequest,
-        GetFolloweeCountResponse
-      >(request, "/followee/count");
+    const response = await this.clientCommunicator.doPost<
+      GetFolloweeCountRequest,
+      GetFolloweeCountResponse
+    >(request, "/followee/count");
 
-      if (response.success) {
-        return response.count;
-      } else {
-        console.error("GetFolloweeCount failed:", response);
-        throw new Error(
-          response.message || "An error occurred while fetching followee count"
-        );
-      }
-    } catch (error) {
-      if (error instanceof Error) {
-        console.error("Client communicator POST failed:", error.message);
-        throw new Error("Client communicator POST failed: " + error.message);
-      } else {
-        console.error(
-          "Client communicator POST failed with unknown error:",
-          error
-        );
-        throw new Error("Client communicator POST failed with unknown error");
-      }
+    console.log("GetFolloweeCount Response:", response);
+
+    if (response.success) {
+      return response.count;
+    } else {
+      console.error("GetFolloweeCount failed:", response);
+      throw new Error(
+        response.message || "An error occurred while fetching followee count"
+      );
     }
   }
 
   public async getFollowerCount(token: string, user: UserDto): Promise<number> {
     const request = { token, user };
+    console.log("GetFollowerCount Request Payload:", request);
 
-    try {
-      const response = await this.clientCommunicator.doPost<
-        GetFollowerCountRequest,
-        GetFollowerCountResponse
-      >(request, "/follower/count");
+    const response = await this.clientCommunicator.doPost<
+      GetFollowerCountRequest,
+      GetFollowerCountResponse
+    >(request, "/follower/count");
 
-      if (response.success) {
-        return response.count;
-      } else {
-        console.error("GetFollowerCount failed:", response);
-        throw new Error(
-          response.message || "An error occurred while fetching follower count"
-        );
-      }
-    } catch (error) {
-      if (error instanceof Error) {
-        console.error("Client communicator POST failed:", error.message);
-        throw new Error("Client communicator POST failed: " + error.message);
-      } else {
-        console.error(
-          "Client communicator POST failed with unknown error:",
-          error
-        );
-        throw new Error("Client communicator POST failed with unknown error");
-      }
+    console.log("GetFollowerCount Response:", response);
+
+    if (response.success) {
+      return response.count;
+    } else {
+      console.error("GetFollowerCount failed:", response);
+      throw new Error(
+        response.message || "An error occurred while fetching follower count"
+      );
     }
   }
 
@@ -209,32 +180,19 @@ export class ServerFacade {
     userToFollow: UserDto
   ): Promise<[number, number]> {
     const request = { token, userToFollow };
+    console.log("Follow Request Payload:", request);
 
-    try {
-      const response = await this.clientCommunicator.doPost<
-        FollowRequest,
-        FollowResponse
-      >(request, "/follow");
+    const response = await this.clientCommunicator.doPost<
+      FollowRequest,
+      FollowResponse
+    >(request, "/follow");
 
-      if (response.success) {
-        return [response.followerCount, response.followeeCount];
-      } else {
-        console.error("Follow failed:", response);
-        throw new Error(
-          response.message || "An error occurred while following"
-        );
-      }
-    } catch (error) {
-      if (error instanceof Error) {
-        console.error("Client communicator POST failed:", error.message);
-        throw new Error("Client communicator POST failed: " + error.message);
-      } else {
-        console.error(
-          "Client communicator POST failed with unknown error:",
-          error
-        );
-        throw new Error("Client communicator POST failed with unknown error");
-      }
+    if (response.success) {
+      console.log("Follow Response:", response);
+      return [response.followerCount, response.followeeCount];
+    } else {
+      console.error("Follow failed:", response);
+      throw new Error(response.message || "An error occurred while following");
     }
   }
 
@@ -243,32 +201,21 @@ export class ServerFacade {
     userToUnfollow: UserDto
   ): Promise<[number, number]> {
     const request: UnfollowRequest = { token, userToUnfollow };
+    console.log("Unfollow Request Payload:", request);
 
-    try {
-      const response = await this.clientCommunicator.doPost<
-        UnfollowRequest,
-        UnfollowResponse
-      >(request, "/unfollow");
+    const response = await this.clientCommunicator.doPost<
+      UnfollowRequest,
+      UnfollowResponse
+    >(request, "/unfollow");
 
-      if (response.success) {
-        return [response.followerCount, response.followeeCount];
-      } else {
-        console.error("Unfollow failed:", response);
-        throw new Error(
-          response.message || "An error occurred while unfollowing"
-        );
-      }
-    } catch (error) {
-      if (error instanceof Error) {
-        console.error("Client communicator POST failed:", error.message);
-        throw new Error("Client communicator POST failed: " + error.message);
-      } else {
-        console.error(
-          "Client communicator POST failed with unknown error:",
-          error
-        );
-        throw new Error("Client communicator POST failed with unknown error");
-      }
+    if (response.success) {
+      console.log("Unfollow Response:", response);
+      return [response.followerCount, response.followeeCount];
+    } else {
+      console.error("Unfollow failed:", response);
+      throw new Error(
+        response.message || "An error occurred while unfollowing"
+      );
     }
   }
 

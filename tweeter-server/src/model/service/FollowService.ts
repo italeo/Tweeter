@@ -105,15 +105,17 @@ export class FollowService {
     token: string,
     userToFollowDto: UserDto
   ): Promise<[followerCount: number, followeeCount: number]> {
-    // Pause so we can see the follow message. Remove when connected to the server
     try {
+      // Perform the follow operation
       await this.followDAO.followUser(token, userToFollowDto.alias);
 
+      // Fetch the current counts
       const followerCount = await this.getFollowerCount(token, userToFollowDto);
       const followeeCount = await this.getFolloweeCount(token, userToFollowDto);
 
       return [followerCount, followeeCount];
     } catch (err) {
+      console.error("Error following user:", err);
       throw new Error("Error following user.");
     }
   }
@@ -123,8 +125,10 @@ export class FollowService {
     userToUnfollowDto: UserDto
   ): Promise<[followerCount: number, followeeCount: number]> {
     try {
+      // Perform the unfollow operation
       await this.followDAO.unfollowUser(token, userToUnfollowDto.alias);
 
+      // Fetch the current counts
       const followerCount = await this.getFollowerCount(
         token,
         userToUnfollowDto
@@ -136,6 +140,7 @@ export class FollowService {
 
       return [followerCount, followeeCount];
     } catch (err) {
+      console.error("Error unfollowing user:", err);
       throw new Error("Error unfollowing user.");
     }
   }

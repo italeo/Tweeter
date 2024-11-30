@@ -58,7 +58,6 @@ export class UserInfoPresenter extends Presenter<UserInfoView> {
     _displayedUser: User
   ): Promise<void> {
     await this.doFailureReportingOperation(async () => {
-      // Display a message when starting the follow operation
       this.view.displayInfoMessage(
         `Adding ${_displayedUser!.name} to followers...`,
         0
@@ -72,9 +71,12 @@ export class UserInfoPresenter extends Presenter<UserInfoView> {
 
       this.view.clearLastInfoMessage();
 
+      // Update the UI state
+      console.log("Follow successful. Updating state...");
       this.view.setIsFollower(true);
       this.view.setFollowersCount(followersCount);
       this.view.setFolloweesCount(followeesCount);
+      await this.refreshFolloweesList(_authToken, _displayedUser);
     }, "follow user");
   }
 
@@ -92,9 +94,18 @@ export class UserInfoPresenter extends Presenter<UserInfoView> {
 
       this.view.clearLastInfoMessage();
 
+      console.log("Unfollow successful. Updating state...");
       this.view.setIsFollower(false);
       this.view.setFollowersCount(followersCount);
       this.view.setFolloweesCount(followeesCount);
+      await this.refreshFolloweesList(_authToken, _displayedUser);
     }, "unfollow user");
+  }
+
+  public async refreshFolloweesList(authToken: AuthToken, displayedUser: User) {
+    await this.doFailureReportingOperation(async () => {
+      console.log("Refreshing followee list...");
+      await this.setNumbFollowees(authToken, displayedUser);
+    }, "refresh followee list");
   }
 }

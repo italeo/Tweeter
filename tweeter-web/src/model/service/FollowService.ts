@@ -52,11 +52,21 @@ export class FollowService {
     const userDto: UserDto = user.toDto();
     const selectedUserDto: UserDto = selectedUser.toDto();
 
-    return await this.serverFacade.getIsFollowerStatus(
+    console.log(
+      "Checking if user:",
+      userDto.alias,
+      "is following:",
+      selectedUserDto.alias
+    );
+
+    const isFollower = await this.serverFacade.getIsFollowerStatus(
       token,
       userDto,
       selectedUserDto
     );
+    console.log("Is Follower Status:", isFollower);
+
+    return isFollower;
   }
 
   public async getFolloweeCount(
@@ -65,8 +75,12 @@ export class FollowService {
   ): Promise<number> {
     const token = authToken.token;
     const userDto = user.toDto();
+    console.log("Fetching followee count for user:", userDto.alias);
 
-    return await this.serverFacade.getFolloweeCount(token, userDto);
+    const count = await this.serverFacade.getFolloweeCount(token, userDto);
+    console.log("Followee Count:", count);
+
+    return count;
   }
 
   public async getFollowerCount(
@@ -75,8 +89,12 @@ export class FollowService {
   ): Promise<number> {
     const token = authToken.token;
     const userDto = user.toDto();
+    console.log("Fetching follower count for user:", userDto.alias);
 
-    return await this.serverFacade.getFollowerCount(token, userDto);
+    const count = await this.serverFacade.getFollowerCount(token, userDto);
+    console.log("Follower Count:", count);
+
+    return count;
   }
 
   public async follow(
@@ -85,8 +103,17 @@ export class FollowService {
   ): Promise<[number, number]> {
     const token = authToken.token;
     const userToFollowDto = userToFollow.toDto();
+    console.log("Attempting to follow user:", userToFollowDto.alias);
 
-    return await this.serverFacade.follow(token, userToFollowDto);
+    const result = await this.serverFacade.follow(token, userToFollowDto);
+    console.log(
+      "Follow result - Followers Count:",
+      result[0],
+      "Followees Count:",
+      result[1]
+    );
+
+    return result;
   }
 
   public async unfollow(
@@ -95,7 +122,16 @@ export class FollowService {
   ): Promise<[number, number]> {
     const token = authToken.token;
     const userToUnfollowDto = userToUnfollow.toDto();
+    console.log("Attempting to unfollow user:", userToUnfollowDto.alias);
 
-    return await this.serverFacade.unfollow(token, userToUnfollowDto);
+    const result = await this.serverFacade.unfollow(token, userToUnfollowDto);
+    console.log(
+      "Unfollow result - Followers Count:",
+      result[0],
+      "Followees Count:",
+      result[1]
+    );
+
+    return result;
   }
 }
