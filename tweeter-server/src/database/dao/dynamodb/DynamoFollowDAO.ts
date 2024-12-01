@@ -94,8 +94,8 @@ export class DynamoFollowDAO extends DynamoBaseDAO implements FollowDAO {
     const params = {
       TableName: this.tableName,
       Key: {
-        followerAlias: { S: followerAlias },
         followeeAlias: { S: followeeAlias },
+        followerAlias: { S: followerAlias },
       },
     };
 
@@ -241,10 +241,10 @@ export class DynamoFollowDAO extends DynamoBaseDAO implements FollowDAO {
     const params: QueryCommandInput = {
       TableName: this.tableName,
       KeyConditionExpression:
-        "followerAlias = :followerAlias AND followeeAlias = :followeeAlias",
+        "followeeAlias = :followeeAlias AND followerAlias = :followerAlias",
       ExpressionAttributeValues: {
-        ":followerAlias": { S: followerAlias },
         ":followeeAlias": { S: followeeAlias },
+        ":followerAlias": { S: followerAlias },
       },
       Limit: 1,
     };

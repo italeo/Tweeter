@@ -25,18 +25,9 @@ const UserInfo = () => {
   }
 
   const listener: UserInfoView = {
-    setIsFollower: (value) => {
-      console.log("setIsFollower called with:", value);
-      setIsFollower(value);
-    },
-    setFollowersCount: (value) => {
-      console.log("setFollowersCount called with:", value);
-      setFollowerCount(value);
-    },
-    setFolloweesCount: (value) => {
-      console.log("setFolloweesCount called with:", value);
-      setFolloweeCount(value);
-    },
+    setIsFollower: setIsFollower,
+    setFolloweesCount: setFolloweeCount,
+    setFollowersCount: setFollowerCount,
     displayErrorMessage: displayErrorMessage,
     displayInfoMessage: displayInfoMessage,
     clearLastInfoMessage: clearLastInfoMessage,
@@ -60,13 +51,9 @@ const UserInfo = () => {
   ): Promise<void> => {
     event.preventDefault();
     console.log("Follow button clicked");
-    console.log("AuthToken before API call:", authToken);
-    console.log("DisplayedUser before API call:", displayedUser);
-
     await presenter.followUserCustom(authToken!, displayedUser!);
-
-    console.log("AuthToken after API call:", authToken);
-    console.log("DisplayedUser after API call:", displayedUser);
+    console.log("AuthToken:", authToken);
+    console.log("DisplayedUser:", displayedUser);
   };
 
   const unfollowDisplayedUser = async (

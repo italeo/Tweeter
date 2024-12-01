@@ -156,22 +156,33 @@ export class ServerFacade {
 
   public async getFollowerCount(token: string, user: UserDto): Promise<number> {
     const request = { token, user };
-    console.log("GetFollowerCount Request Payload:", request);
+    console.log("ServerFacade: Sending getFollowerCount request", {
+      endpoint: "/follower/count",
+      payload: request,
+    });
 
-    const response = await this.clientCommunicator.doPost<
-      GetFollowerCountRequest,
-      GetFollowerCountResponse
-    >(request, "/follower/count");
+    try {
+      const response = await this.clientCommunicator.doPost<
+        GetFollowerCountRequest,
+        GetFollowerCountResponse
+      >(request, "/follower/count");
 
-    console.log("GetFollowerCount Response:", response);
+      console.log("ServerFacade: Received getFollowerCount response", response);
 
-    if (response.success) {
-      return response.count;
-    } else {
-      console.error("GetFollowerCount failed:", response);
-      throw new Error(
-        response.message || "An error occurred while fetching follower count"
+      if (response.success) {
+        return response.count;
+      } else {
+        console.error("ServerFacade: getFollowerCount API failed", response);
+        throw new Error(
+          response.message || "An error occurred while fetching follower count"
+        );
+      }
+    } catch (error) {
+      console.error(
+        "ServerFacade: Unexpected error in getFollowerCount",
+        error
       );
+      throw error;
     }
   }
 
@@ -180,19 +191,34 @@ export class ServerFacade {
     userToFollow: UserDto
   ): Promise<[number, number]> {
     const request = { token, userToFollow };
-    console.log("Follow Request Payload:", request);
+    console.log("ServerFacade: Sending follow request", {
+      endpoint: "/follow",
+      payload: request,
+    });
 
-    const response = await this.clientCommunicator.doPost<
-      FollowRequest,
-      FollowResponse
-    >(request, "/follow");
+    try {
+      const response = await this.clientCommunicator.doPost<
+        FollowRequest,
+        FollowResponse
+      >(request, "/follow");
 
-    if (response.success) {
-      console.log("Follow Response:", response);
-      return [response.followerCount, response.followeeCount];
-    } else {
-      console.error("Follow failed:", response);
-      throw new Error(response.message || "An error occurred while following");
+      console.log("ServerFacade: Received follow response", {
+        success: response.success,
+        followerCount: response.followerCount,
+        followeeCount: response.followeeCount,
+      });
+
+      if (response.success) {
+        return [response.followerCount, response.followeeCount];
+      } else {
+        console.error("ServerFacade: Follow API failed", response);
+        throw new Error(
+          response.message || "An error occurred while following"
+        );
+      }
+    } catch (error) {
+      console.error("ServerFacade: Error in follow method", error);
+      throw error;
     }
   }
 

@@ -117,17 +117,28 @@ export class FollowService {
   ): Promise<[number, number]> {
     const token = authToken.token;
     const userToFollowDto = userToFollow.toDto();
-    console.log(`Attempting to follow user '${userToFollowDto.alias}'`);
+
+    console.log("FollowService: Sending follow request", {
+      method: "follow",
+      targetUser: userToFollowDto.alias,
+      payload: { token, userToFollowDto },
+    });
 
     try {
       const result = await this.serverFacade.follow(token, userToFollowDto);
-      console.log(
-        `Follow successful for '${userToFollowDto.alias}'. Followers Count: ${result[0]}, Followees Count: ${result[1]}`
-      );
+      console.log("FollowService: Follow successful", {
+        method: "follow",
+        targetUser: userToFollowDto.alias,
+        response: result,
+      });
 
       return result;
     } catch (error) {
-      console.error(`Error following user '${userToFollowDto.alias}':`, error);
+      console.error("FollowService: Error in follow method", {
+        method: "follow",
+        targetUser: userToFollowDto.alias,
+        error,
+      });
       throw error;
     }
   }
@@ -138,21 +149,33 @@ export class FollowService {
   ): Promise<[number, number]> {
     const token = authToken.token;
     const userToUnfollowDto = userToUnfollow.toDto();
-    console.log(`Attempting to unfollow user '${userToUnfollowDto.alias}'`);
+
+    console.log("FollowService: Attempting to unfollow user", {
+      method: "unfollow",
+      targetUser: userToUnfollowDto.alias,
+      payload: { token, userToUnfollowDto },
+    });
 
     try {
       const result = await this.serverFacade.unfollow(token, userToUnfollowDto);
-      console.log(
-        `Unfollow successful for '${userToUnfollowDto.alias}'. Followers Count: ${result[0]}, Followees Count: ${result[1]}`
-      );
+      console.log("FollowService: Unfollow successful", {
+        method: "unfollow",
+        targetUser: userToUnfollowDto.alias,
+        response: result,
+      });
 
       return result;
     } catch (error) {
-      console.error(
-        `Error unfollowing user '${userToUnfollowDto.alias}':`,
-        error
+      console.error("FollowService: Error in unfollow method", {
+        method: "unfollow",
+        targetUser: userToUnfollowDto.alias,
+        error,
+      });
+      throw new Error(
+        `Failed to unfollow user '${userToUnfollowDto.alias}': ${
+          (error as Error).message
+        }`
       );
-      throw error;
     }
   }
 }
