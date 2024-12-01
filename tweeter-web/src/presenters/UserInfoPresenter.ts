@@ -21,35 +21,54 @@ export class UserInfoPresenter extends Presenter<UserInfoView> {
     currentUser: User,
     displayedUser: User
   ) {
+    console.log("setIsFollowerStatus called with:", {
+      authToken,
+      currentUser,
+      displayedUser,
+    });
+
     await this.doFailureReportingOperation(async () => {
       if (currentUser === displayedUser) {
+        console.log(
+          "Current user is the displayed user, setting isFollower to false"
+        );
         this.view.setIsFollower(false);
       } else {
-        this.view.setIsFollower(
-          await this.followService.getIsFollowerStatus(
-            authToken!,
-            currentUser!,
-            displayedUser!
-          )
+        const isFollower = await this.followService.getIsFollowerStatus(
+          authToken!,
+          currentUser!,
+          displayedUser!
         );
+        console.log("Fetched isFollower status:", isFollower);
+        this.view.setIsFollower(isFollower);
       }
     }, "determine follower status");
   }
 
   // Change to setNumberOfFollowees
   public async setNumbFollowees(authToken: AuthToken, displayedUser: User) {
+    console.log("setNumbFollowees called with:", { authToken, displayedUser });
+
     await this.doFailureReportingOperation(async () => {
-      this.view.setFolloweesCount(
-        await this.followService.getFolloweeCount(authToken, displayedUser)
+      const followeeCount = await this.followService.getFolloweeCount(
+        authToken,
+        displayedUser
       );
+      console.log("Fetched followee count:", followeeCount);
+      this.view.setFolloweesCount(followeeCount);
     }, "get followees count");
   }
 
   public async setNumbFollowers(authToken: AuthToken, displayedUser: User) {
+    console.log("setNumbFollowers called with:", { authToken, displayedUser });
+
     await this.doFailureReportingOperation(async () => {
-      this.view.setFollowersCount(
-        await this.followService.getFollowerCount(authToken, displayedUser)
+      const followerCount = await this.followService.getFollowerCount(
+        authToken,
+        displayedUser
       );
+      console.log("Fetched follower count:", followerCount);
+      this.view.setFollowersCount(followerCount);
     }, "get followers count");
   }
 
@@ -57,25 +76,34 @@ export class UserInfoPresenter extends Presenter<UserInfoView> {
     _authToken: AuthToken,
     _displayedUser: User
   ): Promise<void> {
+    console.log("followUserCustom called with:", {
+      authToken: _authToken,
+      displayedUser: _displayedUser,
+    });
+
     await this.doFailureReportingOperation(async () => {
       this.view.displayInfoMessage(
         `Adding ${_displayedUser!.name} to followers...`,
         0
       );
 
-      // Call the service to follow the user
-      let [followersCount, followeesCount] = await this.followService.follow(
+      const [followersCount, followeesCount] = await this.followService.follow(
         _authToken!,
         _displayedUser!
       );
+      console.log("Follow service response:", {
+        followersCount,
+        followeesCount,
+      });
 
       this.view.clearLastInfoMessage();
 
-      // Update the UI state
       console.log("Follow successful. Updating state...");
       this.view.setIsFollower(true);
       this.view.setFollowersCount(followersCount);
       this.view.setFolloweesCount(followeesCount);
+
+      console.log("Refreshing followee list...");
       await this.refreshFolloweesList(_authToken, _displayedUser);
     }, "follow user");
   }
@@ -84,13 +112,23 @@ export class UserInfoPresenter extends Presenter<UserInfoView> {
     _authToken: AuthToken,
     _displayedUser: User
   ): Promise<void> {
+    console.log("unfollowUserCustom called with:", {
+      authToken: _authToken,
+      displayedUser: _displayedUser,
+    });
+
     await this.doFailureReportingOperation(async () => {
       this.view.displayInfoMessage(
         `Removing ${_displayedUser!.name} from followers...`,
         0
       );
+
       const [followersCount, followeesCount] =
         await this.followService.unfollow(_authToken!, _displayedUser!);
+      console.log("Unfollow service response:", {
+        followersCount,
+        followeesCount,
+      });
 
       this.view.clearLastInfoMessage();
 
@@ -98,13 +136,20 @@ export class UserInfoPresenter extends Presenter<UserInfoView> {
       this.view.setIsFollower(false);
       this.view.setFollowersCount(followersCount);
       this.view.setFolloweesCount(followeesCount);
+
+      console.log("Refreshing followee list...");
       await this.refreshFolloweesList(_authToken, _displayedUser);
     }, "unfollow user");
   }
 
   public async refreshFolloweesList(authToken: AuthToken, displayedUser: User) {
+    console.log("refreshFolloweesList called with:", {
+      authToken,
+      displayedUser,
+    });
+
     await this.doFailureReportingOperation(async () => {
-      console.log("Refreshing followee list...");
+      console.log("Refreshing followee count...");
       await this.setNumbFollowees(authToken, displayedUser);
     }, "refresh followee list");
   }

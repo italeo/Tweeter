@@ -25,9 +25,18 @@ const UserInfo = () => {
   }
 
   const listener: UserInfoView = {
-    setIsFollower: setIsFollower,
-    setFolloweesCount: setFolloweeCount,
-    setFollowersCount: setFollowerCount,
+    setIsFollower: (value) => {
+      console.log("setIsFollower called with:", value);
+      setIsFollower(value);
+    },
+    setFollowersCount: (value) => {
+      console.log("setFollowersCount called with:", value);
+      setFollowerCount(value);
+    },
+    setFolloweesCount: (value) => {
+      console.log("setFolloweesCount called with:", value);
+      setFolloweeCount(value);
+    },
     displayErrorMessage: displayErrorMessage,
     displayInfoMessage: displayInfoMessage,
     clearLastInfoMessage: clearLastInfoMessage,
@@ -50,7 +59,14 @@ const UserInfo = () => {
     event: React.MouseEvent
   ): Promise<void> => {
     event.preventDefault();
+    console.log("Follow button clicked");
+    console.log("AuthToken before API call:", authToken);
+    console.log("DisplayedUser before API call:", displayedUser);
+
     await presenter.followUserCustom(authToken!, displayedUser!);
+
+    console.log("AuthToken after API call:", authToken);
+    console.log("DisplayedUser after API call:", displayedUser);
   };
 
   const unfollowDisplayedUser = async (

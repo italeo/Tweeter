@@ -20,11 +20,15 @@ export class DynamoFollowDAO extends DynamoBaseDAO implements FollowDAO {
     followerAlias: string,
     followeeAlias: string
   ): Promise<void> {
+    console.log("Starting followUser...");
+    console.log(`Follower: ${followerAlias}, Followee: ${followeeAlias}`);
+
     // Check if the relationship already exists
     const isFollowing = await this.isUserFollowing(
       followerAlias,
       followeeAlias
     );
+    console.log(`Is user already following: ${isFollowing}`);
 
     if (isFollowing) {
       console.warn(
@@ -33,6 +37,7 @@ export class DynamoFollowDAO extends DynamoBaseDAO implements FollowDAO {
       return;
     }
 
+    // Prepare parameters for PutItemCommand
     const params = {
       TableName: this.tableName,
       Item: {
@@ -41,17 +46,25 @@ export class DynamoFollowDAO extends DynamoBaseDAO implements FollowDAO {
       },
     };
 
+    console.log("PutItemCommand Params:", JSON.stringify(params, null, 2));
+
     try {
-      await this.client.send(new PutItemCommand(params));
+      // Execute the PutItemCommand
+      const result = await this.client.send(new PutItemCommand(params));
       console.log(
-        `Follow relationship created: ${followerAlias} -> ${followeeAlias}`
+        `Follow relationship created successfully: ${followerAlias} -> ${followeeAlias}`
       );
+      console.log("PutItemCommand Result:", JSON.stringify(result, null, 2));
+
+      // Verify the record exists after insertion
+      const postCheck = await this.isUserFollowing(
+        followerAlias,
+        followeeAlias
+      );
+      console.log(`Post-insertion check: Is user following? ${postCheck}`);
     } catch (error) {
-      console.error(
-        `Error creating follow relationship: ${followerAlias} -> ${followeeAlias}`,
-        error
-      );
-      throw error;
+      console.error(`Error creating follow relationship:`, error);
+      throw error; // Re-throw error to propagate
     }
   }
 
@@ -60,11 +73,15 @@ export class DynamoFollowDAO extends DynamoBaseDAO implements FollowDAO {
     followerAlias: string,
     followeeAlias: string
   ): Promise<void> {
+    console.log("Starting unfollowUser...");
+    console.log(`Follower: ${followerAlias}, Followee: ${followeeAlias}`);
+
     // Check if the relationship exists
     const isFollowing = await this.isUserFollowing(
       followerAlias,
       followeeAlias
     );
+    console.log(`Does follow relationship exist: ${isFollowing}`);
 
     if (!isFollowing) {
       console.warn(
@@ -73,6 +90,7 @@ export class DynamoFollowDAO extends DynamoBaseDAO implements FollowDAO {
       return;
     }
 
+    // Prepare parameters for DeleteItemCommand
     const params = {
       TableName: this.tableName,
       Key: {
@@ -81,17 +99,25 @@ export class DynamoFollowDAO extends DynamoBaseDAO implements FollowDAO {
       },
     };
 
+    console.log("DeleteItemCommand Params:", JSON.stringify(params, null, 2));
+
     try {
-      await this.client.send(new DeleteItemCommand(params));
+      // Execute the DeleteItemCommand
+      const result = await this.client.send(new DeleteItemCommand(params));
       console.log(
-        `Follow relationship deleted: ${followerAlias} -> ${followeeAlias}`
+        `Follow relationship deleted successfully: ${followerAlias} -> ${followeeAlias}`
       );
+      console.log("DeleteItemCommand Result:", JSON.stringify(result, null, 2));
+
+      // Verify the record no longer exists after deletion
+      const postCheck = await this.isUserFollowing(
+        followerAlias,
+        followeeAlias
+      );
+      console.log(`Post-deletion check: Is user following? ${postCheck}`);
     } catch (error) {
-      console.error(
-        `Error deleting follow relationship: ${followerAlias} -> ${followeeAlias}`,
-        error
-      );
-      throw error;
+      console.error(`Error deleting follow relationship:`, error);
+      throw error; // Re-throw error to propagate
     }
   }
 
@@ -212,7 +238,7 @@ export class DynamoFollowDAO extends DynamoBaseDAO implements FollowDAO {
     followerAlias: string,
     followeeAlias: string
   ): Promise<boolean> {
-    const params = {
+    const params: QueryCommandInput = {
       TableName: this.tableName,
       KeyConditionExpression:
         "followerAlias = :followerAlias AND followeeAlias = :followeeAlias",
@@ -220,16 +246,28 @@ export class DynamoFollowDAO extends DynamoBaseDAO implements FollowDAO {
         ":followerAlias": { S: followerAlias },
         ":followeeAlias": { S: followeeAlias },
       },
+      Limit: 1,
     };
+
+    console.log(
+      "QueryCommand Params for isUserFollowing:",
+      JSON.stringify(params, null, 2)
+    );
 
     try {
       const data = await this.client.send(new QueryCommand(params));
-      return data.Count !== undefined && data.Count > 0;
-    } catch (error) {
-      console.error(
-        `Error checking follow relationship: ${followerAlias} -> ${followeeAlias}`,
-        error
+      console.log(
+        "QueryCommand Result for isUserFollowing:",
+        JSON.stringify(data, null, 2)
       );
+      console.log(
+        "isUserFollowing result:",
+        !!(data.Items && data.Items.length > 0)
+      );
+
+      return !!(data.Items && data.Items.length > 0);
+    } catch (error) {
+      console.error(`Error in isUserFollowing:`, error);
       throw error;
     }
   }

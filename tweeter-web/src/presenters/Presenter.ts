@@ -28,12 +28,23 @@ export class Presenter<V extends View> {
     operation: () => Promise<void>,
     operationDescription: string
   ): Promise<void> {
+    console.log(`Starting operation: ${operationDescription}`);
+
     try {
+      // Execute the operation
       await operation();
+      console.log(`Operation '${operationDescription}' completed successfully`);
     } catch (error) {
+      // Log the error and display it through the view
+      console.error(
+        `Operation '${operationDescription}' failed due to:`,
+        error instanceof Error ? error.message : error
+      );
+
+      // Inform the user about the failure
       this.view.displayErrorMessage(
         `Failed to ${operationDescription} because of exception: ${
-          (error as Error).message
+          error instanceof Error ? error.message : "Unknown error"
         }`
       );
     }

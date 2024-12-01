@@ -25,8 +25,11 @@ export abstract class DynamoBaseDAO {
   ): Promise<any> {
     const params = { TableName: tableName, Key: key };
 
+    console.log("getItem Params:", JSON.stringify(params, null, 2));
+
     try {
       const result = await this.client.send(new GetItemCommand(params));
+      console.log("getItem Result:", JSON.stringify(result, null, 2));
       return result.Item || null;
     } catch (error) {
       console.error(`Error fetching item from table ${tableName}:`, error);
@@ -41,8 +44,11 @@ export abstract class DynamoBaseDAO {
   ): Promise<void> {
     const params = { TableName: tableName, Item: item };
 
+    console.log("putItem Params:", JSON.stringify(params, null, 2));
+
     try {
-      await this.client.send(new PutItemCommand(params));
+      const result = await this.client.send(new PutItemCommand(params));
+      console.log("putItem Result:", JSON.stringify(result, null, 2));
     } catch (error) {
       console.error(`Error adding item to table ${tableName}:`, error);
       throw new Error(`Failed to put item: ${JSON.stringify(item)}`);
@@ -56,8 +62,11 @@ export abstract class DynamoBaseDAO {
   ): Promise<void> {
     const params = { TableName: tableName, Key: key };
 
+    console.log("deleteItem Params:", JSON.stringify(params, null, 2));
+
     try {
-      await this.client.send(new DeleteItemCommand(params));
+      const result = await this.client.send(new DeleteItemCommand(params));
+      console.log("deleteItem Result:", JSON.stringify(result, null, 2));
     } catch (error) {
       console.error(`Error deleting item from table ${tableName}:`, error);
       throw new Error(`Failed to delete item: ${JSON.stringify(key)}`);
@@ -73,8 +82,11 @@ export abstract class DynamoBaseDAO {
       RequestItems: { [tableName]: writeRequests },
     };
 
+    console.log("batchWrite Params:", JSON.stringify(params, null, 2));
+
     try {
-      await this.client.send(new BatchWriteItemCommand(params));
+      const result = await this.client.send(new BatchWriteItemCommand(params));
+      console.log("batchWrite Result:", JSON.stringify(result, null, 2));
     } catch (error) {
       console.error(
         `Error performing batch write on table ${tableName}:`,
@@ -94,6 +106,7 @@ export abstract class DynamoBaseDAO {
     console.log(
       `Cache miss. Fetching details for alias: ${alias} from DynamoDB`
     );
+
     try {
       const item = await this.getItem("Users", { alias: { S: alias } });
 
@@ -101,6 +114,8 @@ export abstract class DynamoBaseDAO {
         console.warn(`User not found for alias: ${alias}`);
         return null;
       }
+
+      console.log("User fetched from DB:", JSON.stringify(item, null, 2));
 
       const user = new User(
         item.firstName?.S || "Unknown",
@@ -136,12 +151,20 @@ export abstract class DynamoBaseDAO {
 
       const params = { RequestItems: { Users: { Keys: keys } } };
 
+      console.log(
+        "batchFetchUserDetails Params:",
+        JSON.stringify(params, null, 2)
+      );
+
       try {
         const response = await this.client.send(
           new BatchGetItemCommand(params)
         );
         const items = response.Responses?.Users || [];
-        console.log("DynamoDB BatchGetItem Response:", items);
+        console.log(
+          "batchFetchUserDetails Result:",
+          JSON.stringify(items, null, 2)
+        );
 
         for (const item of items) {
           const user = new User(
@@ -179,6 +202,10 @@ export abstract class DynamoBaseDAO {
               })
             );
             const retryItems = retryResponse.Responses?.Users || [];
+            console.log(
+              `Retry Result (Attempt ${retryCount}):`,
+              JSON.stringify(retryItems, null, 2)
+            );
             for (const item of retryItems) {
               const retryUser = new User(
                 item.firstName?.S || "Unknown",
@@ -204,7 +231,10 @@ export abstract class DynamoBaseDAO {
       }
     }
 
-    console.log("Final User Map:", resultMap);
+    console.log(
+      "Final User Map:",
+      JSON.stringify(Array.from(resultMap.entries()), null, 2)
+    );
     return resultMap;
   }
 }

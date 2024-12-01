@@ -53,20 +53,27 @@ export class FollowService {
     const selectedUserDto: UserDto = selectedUser.toDto();
 
     console.log(
-      "Checking if user:",
-      userDto.alias,
-      "is following:",
-      selectedUserDto.alias
+      `Checking if user '${userDto.alias}' is following '${selectedUserDto.alias}'`
     );
 
-    const isFollower = await this.serverFacade.getIsFollowerStatus(
-      token,
-      userDto,
-      selectedUserDto
-    );
-    console.log("Is Follower Status:", isFollower);
+    try {
+      const isFollower = await this.serverFacade.getIsFollowerStatus(
+        token,
+        userDto,
+        selectedUserDto
+      );
+      console.log(
+        `Is Follower Status for '${userDto.alias}' and '${selectedUserDto.alias}': ${isFollower}`
+      );
 
-    return isFollower;
+      return isFollower;
+    } catch (error) {
+      console.error(
+        `Error checking follower status for '${userDto.alias}' and '${selectedUserDto.alias}':`,
+        error
+      );
+      throw error; // Re-throw the error to ensure upstream handling
+    }
   }
 
   public async getFolloweeCount(
@@ -75,12 +82,19 @@ export class FollowService {
   ): Promise<number> {
     const token = authToken.token;
     const userDto = user.toDto();
-    console.log("Fetching followee count for user:", userDto.alias);
+    console.log(`Fetching followee count for user '${userDto.alias}'`);
 
-    const count = await this.serverFacade.getFolloweeCount(token, userDto);
-    console.log("Followee Count:", count);
-
-    return count;
+    try {
+      const count = await this.serverFacade.getFolloweeCount(token, userDto);
+      console.log(`Followee Count for '${userDto.alias}': ${count}`);
+      return count;
+    } catch (error) {
+      console.error(
+        `Error fetching followee count for '${userDto.alias}':`,
+        error
+      );
+      throw error;
+    }
   }
 
   public async getFollowerCount(
@@ -103,17 +117,19 @@ export class FollowService {
   ): Promise<[number, number]> {
     const token = authToken.token;
     const userToFollowDto = userToFollow.toDto();
-    console.log("Attempting to follow user:", userToFollowDto.alias);
+    console.log(`Attempting to follow user '${userToFollowDto.alias}'`);
 
-    const result = await this.serverFacade.follow(token, userToFollowDto);
-    console.log(
-      "Follow result - Followers Count:",
-      result[0],
-      "Followees Count:",
-      result[1]
-    );
+    try {
+      const result = await this.serverFacade.follow(token, userToFollowDto);
+      console.log(
+        `Follow successful for '${userToFollowDto.alias}'. Followers Count: ${result[0]}, Followees Count: ${result[1]}`
+      );
 
-    return result;
+      return result;
+    } catch (error) {
+      console.error(`Error following user '${userToFollowDto.alias}':`, error);
+      throw error;
+    }
   }
 
   public async unfollow(
@@ -122,16 +138,21 @@ export class FollowService {
   ): Promise<[number, number]> {
     const token = authToken.token;
     const userToUnfollowDto = userToUnfollow.toDto();
-    console.log("Attempting to unfollow user:", userToUnfollowDto.alias);
+    console.log(`Attempting to unfollow user '${userToUnfollowDto.alias}'`);
 
-    const result = await this.serverFacade.unfollow(token, userToUnfollowDto);
-    console.log(
-      "Unfollow result - Followers Count:",
-      result[0],
-      "Followees Count:",
-      result[1]
-    );
+    try {
+      const result = await this.serverFacade.unfollow(token, userToUnfollowDto);
+      console.log(
+        `Unfollow successful for '${userToUnfollowDto.alias}'. Followers Count: ${result[0]}, Followees Count: ${result[1]}`
+      );
 
-    return result;
+      return result;
+    } catch (error) {
+      console.error(
+        `Error unfollowing user '${userToUnfollowDto.alias}':`,
+        error
+      );
+      throw error;
+    }
   }
 }
