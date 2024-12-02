@@ -3,6 +3,7 @@ import {
   QueryCommandInput,
   PutItemCommand,
   DeleteItemCommand,
+  TransactWriteItemsCommand,
 } from "@aws-sdk/client-dynamodb";
 import { FollowDAO } from "../interfaces/FollowDAO";
 import { UserDto } from "tweeter-shared";
@@ -20,51 +21,32 @@ export class DynamoFollowDAO extends DynamoBaseDAO implements FollowDAO {
     followerAlias: string,
     followeeAlias: string
   ): Promise<void> {
-    console.log("Starting followUser...");
-    console.log(`Follower: ${followerAlias}, Followee: ${followeeAlias}`);
-
-    // Check if the relationship already exists
-    const isFollowing = await this.isUserFollowing(
-      followerAlias,
-      followeeAlias
-    );
-    console.log(`Is user already following: ${isFollowing}`);
-
-    if (isFollowing) {
-      console.warn(
-        `User ${followerAlias} is already following ${followeeAlias}`
-      );
-      return;
-    }
-
-    // Prepare parameters for PutItemCommand
-    const params = {
-      TableName: this.tableName,
-      Item: {
-        followerAlias: { S: followerAlias },
-        followeeAlias: { S: followeeAlias },
-      },
-    };
-
-    console.log("PutItemCommand Params:", JSON.stringify(params, null, 2));
+    console.log(`Starting followUser: ${followerAlias} -> ${followeeAlias}`);
 
     try {
-      // Execute the PutItemCommand
-      const result = await this.client.send(new PutItemCommand(params));
-      console.log(
-        `Follow relationship created successfully: ${followerAlias} -> ${followeeAlias}`
-      );
-      console.log("PutItemCommand Result:", JSON.stringify(result, null, 2));
+      const params = {
+        TransactItems: [
+          {
+            Put: {
+              TableName: this.tableName,
+              Item: {
+                followerAlias: { S: followerAlias },
+                followeeAlias: { S: followeeAlias },
+              },
+              ConditionExpression:
+                "attribute_not_exists(followerAlias) AND attribute_not_exists(followeeAlias)",
+            },
+          },
+        ],
+      };
 
-      // Verify the record exists after insertion
-      const postCheck = await this.isUserFollowing(
-        followerAlias,
-        followeeAlias
+      await this.client.send(new TransactWriteItemsCommand(params));
+      console.log(
+        `Follow relationship created: ${followerAlias} -> ${followeeAlias}`
       );
-      console.log(`Post-insertion check: Is user following? ${postCheck}`);
     } catch (error) {
       console.error(`Error creating follow relationship:`, error);
-      throw error; // Re-throw error to propagate
+      throw error;
     }
   }
 
@@ -73,51 +55,32 @@ export class DynamoFollowDAO extends DynamoBaseDAO implements FollowDAO {
     followerAlias: string,
     followeeAlias: string
   ): Promise<void> {
-    console.log("Starting unfollowUser...");
-    console.log(`Follower: ${followerAlias}, Followee: ${followeeAlias}`);
-
-    // Check if the relationship exists
-    const isFollowing = await this.isUserFollowing(
-      followerAlias,
-      followeeAlias
-    );
-    console.log(`Does follow relationship exist: ${isFollowing}`);
-
-    if (!isFollowing) {
-      console.warn(
-        `No follow relationship exists: ${followerAlias} -> ${followeeAlias}`
-      );
-      return;
-    }
-
-    // Prepare parameters for DeleteItemCommand
-    const params = {
-      TableName: this.tableName,
-      Key: {
-        followeeAlias: { S: followeeAlias },
-        followerAlias: { S: followerAlias },
-      },
-    };
-
-    console.log("DeleteItemCommand Params:", JSON.stringify(params, null, 2));
+    console.log(`Starting unfollowUser: ${followerAlias} -> ${followeeAlias}`);
 
     try {
-      // Execute the DeleteItemCommand
-      const result = await this.client.send(new DeleteItemCommand(params));
-      console.log(
-        `Follow relationship deleted successfully: ${followerAlias} -> ${followeeAlias}`
-      );
-      console.log("DeleteItemCommand Result:", JSON.stringify(result, null, 2));
+      const params = {
+        TransactItems: [
+          {
+            Delete: {
+              TableName: this.tableName,
+              Key: {
+                followeeAlias: { S: followeeAlias },
+                followerAlias: { S: followerAlias },
+              },
+              ConditionExpression:
+                "attribute_exists(followerAlias) AND attribute_exists(followeeAlias)",
+            },
+          },
+        ],
+      };
 
-      // Verify the record no longer exists after deletion
-      const postCheck = await this.isUserFollowing(
-        followerAlias,
-        followeeAlias
+      await this.client.send(new TransactWriteItemsCommand(params));
+      console.log(
+        `Follow relationship deleted: ${followerAlias} -> ${followeeAlias}`
       );
-      console.log(`Post-deletion check: Is user following? ${postCheck}`);
     } catch (error) {
       console.error(`Error deleting follow relationship:`, error);
-      throw error; // Re-throw error to propagate
+      throw error;
     }
   }
 
@@ -145,32 +108,26 @@ export class DynamoFollowDAO extends DynamoBaseDAO implements FollowDAO {
 
     try {
       const data = await this.client.send(new QueryCommand(params));
+      const aliases = (data.Items || []).map(
+        (item) => item.followerAlias?.S || "unknown_alias"
+      );
 
-      // Fetch user details for followers
-      const followers: (UserDto | null)[] = await Promise.all(
-        (data.Items || []).map(async (item) => {
-          const userAlias = item.followerAlias?.S || "unknown_alias";
-          const user = await this.fetchUserDetails(userAlias); // Use fetchUserDetails
-          if (!user) {
-            console.warn(`User details not found for alias: ${userAlias}`);
-            return null; // Skip invalid entries
+      // Batch fetch user details
+      const userMap = await this.batchFetchUserDetails(aliases);
+
+      // Map fetched users to UserDto and filter out undefined
+      const followers: UserDto[] = aliases
+        .map((alias) => {
+          const user = userMap.get(alias);
+          if (user) {
+            return user.toDto(); // Convert to UserDto
           }
-          return {
-            alias: user.alias,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            imageUrl: user.imageUrl,
-          };
+          return undefined; // Handle missing users
         })
-      );
-
-      // Remove null values and ensure TypeScript understands this
-      const validFollowers = followers.filter(
-        (follower): follower is UserDto => follower !== null
-      );
+        .filter((user): user is UserDto => user !== undefined); // Type-safe filter
 
       const hasMore = !!data.LastEvaluatedKey;
-      return { followers: validFollowers, hasMore };
+      return { followers, hasMore };
     } catch (error) {
       console.error(`Error retrieving followers for ${userAlias}:`, error);
       throw error;
@@ -201,32 +158,26 @@ export class DynamoFollowDAO extends DynamoBaseDAO implements FollowDAO {
 
     try {
       const data = await this.client.send(new QueryCommand(params));
+      const aliases = (data.Items || []).map(
+        (item) => item.followeeAlias?.S || "unknown_alias"
+      );
 
-      // Fetch user details for followees
-      const followees: (UserDto | null)[] = await Promise.all(
-        (data.Items || []).map(async (item) => {
-          const userAlias = item.followeeAlias?.S || "unknown_alias";
-          const user = await this.fetchUserDetails(userAlias); // Use fetchUserDetails
-          if (!user) {
-            console.warn(`User details not found for alias: ${userAlias}`);
-            return null; // Skip invalid entries
+      // Batch fetch user details
+      const userMap = await this.batchFetchUserDetails(aliases);
+
+      // Map fetched users to UserDto and filter out undefined
+      const followees: UserDto[] = aliases
+        .map((alias) => {
+          const user = userMap.get(alias);
+          if (user) {
+            return user.toDto(); // Convert to UserDto
           }
-          return {
-            alias: user.alias,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            imageUrl: user.imageUrl,
-          };
+          return undefined; // Handle missing users
         })
-      );
-
-      // Remove null values and ensure TypeScript understands this
-      const validFollowees = followees.filter(
-        (followee): followee is UserDto => followee !== null
-      );
+        .filter((user): user is UserDto => user !== undefined); // Type-safe filter
 
       const hasMore = !!data.LastEvaluatedKey;
-      return { followees: validFollowees, hasMore };
+      return { followees, hasMore };
     } catch (error) {
       console.error(`Error retrieving followees for ${userAlias}:`, error);
       throw error;

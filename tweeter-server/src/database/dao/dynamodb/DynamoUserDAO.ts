@@ -2,6 +2,7 @@ import {
   DeleteItemCommand,
   GetItemCommand,
   PutItemCommand,
+  QueryCommand,
   UpdateItemCommand,
 } from "@aws-sdk/client-dynamodb";
 import { UserDAO } from "../interfaces/UserDAO";
