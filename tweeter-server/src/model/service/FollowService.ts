@@ -105,6 +105,10 @@ export class FollowService {
     followerAlias: string,
     userToUnfollowDto: UserDto
   ): Promise<[followerCount: number, followeeCount: number]> {
+    console.log(`Unfollow request received with:`);
+    console.log(`followerAlias: ${followerAlias}`);
+    console.log(`userToUnfollow: ${JSON.stringify(userToUnfollowDto)}`);
+
     try {
       // Perform the unfollow operation
       await this.followDAO.unfollowUser(followerAlias, userToUnfollowDto.alias);

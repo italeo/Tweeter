@@ -51,7 +51,7 @@ const UserInfo = () => {
   ): Promise<void> => {
     event.preventDefault();
     console.log("Follow button clicked");
-    await presenter.followUserCustom(authToken!, currentUser!, displayedUser!); // Pass currentUser
+    await presenter.followUserCustom(authToken!, currentUser!, displayedUser!);
     console.log("AuthToken:", authToken);
     console.log("DisplayedUser:", displayedUser);
   };
@@ -64,7 +64,7 @@ const UserInfo = () => {
       authToken!,
       currentUser!,
       displayedUser!
-    ); // Pass currentUser
+    );
   };
 
   return (

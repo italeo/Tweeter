@@ -12,6 +12,6 @@ export const handler = async (
   const followService = new FollowService(followDAO);
 
   return handleFollowAction(() =>
-    followService.unfollow(request.token, request.userToUnfollow)
+    followService.unfollow(request.followerAlias, request.userToUnfollow)
   );
 };

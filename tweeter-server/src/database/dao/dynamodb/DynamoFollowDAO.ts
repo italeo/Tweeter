@@ -1,8 +1,6 @@
 import {
   QueryCommand,
   QueryCommandInput,
-  PutItemCommand,
-  DeleteItemCommand,
   TransactWriteItemsCommand,
 } from "@aws-sdk/client-dynamodb";
 import { FollowDAO } from "../interfaces/FollowDAO";
@@ -55,31 +53,111 @@ export class DynamoFollowDAO extends DynamoBaseDAO implements FollowDAO {
     followerAlias: string,
     followeeAlias: string
   ): Promise<void> {
-    console.log(`Starting unfollowUser: ${followerAlias} -> ${followeeAlias}`);
+    console.log(
+      `Starting unfollowUser operation: ${followerAlias} -> ${followeeAlias}`
+    );
+
+    const deleteParams = {
+      TransactItems: [
+        {
+          Delete: {
+            TableName: this.tableName,
+            Key: {
+              followeeAlias: { S: followeeAlias },
+              followerAlias: { S: followerAlias },
+            },
+            ConditionExpression:
+              "attribute_exists(followerAlias) AND attribute_exists(followeeAlias)",
+          },
+        },
+      ],
+    };
+
+    console.log(
+      "Prepared deleteParams for TransactWriteItemsCommand:",
+      JSON.stringify(deleteParams, null, 2)
+    );
 
     try {
-      const params = {
-        TransactItems: [
-          {
-            Delete: {
-              TableName: this.tableName,
-              Key: {
-                followeeAlias: { S: followeeAlias },
-                followerAlias: { S: followerAlias },
-              },
-              ConditionExpression:
-                "attribute_exists(followerAlias) AND attribute_exists(followeeAlias)",
-            },
-          },
-        ],
+      console.log("Checking if the item exists before attempting to delete...");
+
+      // Query the table to check if the item exists
+      const checkItemParams = {
+        TableName: this.tableName,
+        KeyConditionExpression:
+          "followeeAlias = :followeeAlias AND followerAlias = :followerAlias",
+        ExpressionAttributeValues: {
+          ":followeeAlias": { S: followeeAlias },
+          ":followerAlias": { S: followerAlias },
+        },
       };
 
-      await this.client.send(new TransactWriteItemsCommand(params));
-      console.log(
-        `Follow relationship deleted: ${followerAlias} -> ${followeeAlias}`
+      const checkItemResult = await this.client.send(
+        new QueryCommand(checkItemParams)
       );
-    } catch (error) {
-      console.error(`Error deleting follow relationship:`, error);
+      console.log(
+        "Item existence check result:",
+        JSON.stringify(checkItemResult, null, 2)
+      );
+
+      if (!checkItemResult.Items || checkItemResult.Items.length === 0) {
+        console.warn(
+          `Item to delete does not exist: ${followerAlias} -> ${followeeAlias}`
+        );
+      } else {
+        console.log(
+          `Item exists. Proceeding with delete operation: ${followerAlias} -> ${followeeAlias}`
+        );
+      }
+
+      // Attempt the delete operation
+      await this.client.send(new TransactWriteItemsCommand(deleteParams));
+      console.log(
+        `Follow relationship successfully deleted: ${followerAlias} -> ${followeeAlias}`
+      );
+    } catch (err) {
+      // Narrowing error type
+      const error = err as Error;
+      console.error(
+        `Error during delete operation for ${followerAlias} -> ${followeeAlias}:`,
+        error.message
+      );
+
+      if (
+        error.name === "TransactionCanceledException" &&
+        error.message.includes("ConditionalCheckFailed")
+      ) {
+        console.error(
+          `Conditional check failed. The follow relationship between ${followerAlias} and ${followeeAlias} might not exist.`
+        );
+      } else if (error.name === "ValidationException") {
+        console.error(
+          "ValidationException: Check the keys or condition expressions for correctness."
+        );
+      }
+
+      console.log("Re-checking the current table state for debugging...");
+      try {
+        const tableScanParams = {
+          TableName: this.tableName,
+          Limit: 10, // Limit the scan to a few items for debugging
+        };
+
+        const tableScanResult = await this.client.send(
+          new QueryCommand(tableScanParams)
+        );
+        console.log(
+          "Table state after error:",
+          JSON.stringify(tableScanResult, null, 2)
+        );
+      } catch (scanError) {
+        const scanErrorTyped = scanError as Error;
+        console.error(
+          "Error scanning the table for debugging:",
+          scanErrorTyped.message
+        );
+      }
+
       throw error;
     }
   }
