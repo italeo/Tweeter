@@ -3,4 +3,5 @@ import { TweeterRequest } from "./TweeterRequest";
 
 export interface UnfollowRequest extends TweeterRequest {
   readonly userToUnfollow: UserDto;
+  readonly followerAlias: string;
 }

@@ -188,9 +188,10 @@ export class ServerFacade {
 
   public async follow(
     token: string,
+    followerAlias: string,
     userToFollow: UserDto
   ): Promise<[number, number]> {
-    const request = { token, userToFollow };
+    const request = { token, followerAlias, userToFollow }; // Include followerAlias in the request
     console.log("ServerFacade: Sending follow request", {
       endpoint: "/follow",
       payload: request,
@@ -224,24 +225,30 @@ export class ServerFacade {
 
   public async unfollow(
     token: string,
+    followerAlias: string,
     userToUnfollow: UserDto
   ): Promise<[number, number]> {
-    const request: UnfollowRequest = { token, userToUnfollow };
+    const request: UnfollowRequest = { token, followerAlias, userToUnfollow }; // Include followerAlias in the request
     console.log("Unfollow Request Payload:", request);
 
-    const response = await this.clientCommunicator.doPost<
-      UnfollowRequest,
-      UnfollowResponse
-    >(request, "/unfollow");
+    try {
+      const response = await this.clientCommunicator.doPost<
+        UnfollowRequest,
+        UnfollowResponse
+      >(request, "/unfollow");
 
-    if (response.success) {
-      console.log("Unfollow Response:", response);
-      return [response.followerCount, response.followeeCount];
-    } else {
-      console.error("Unfollow failed:", response);
-      throw new Error(
-        response.message || "An error occurred while unfollowing"
-      );
+      if (response.success) {
+        console.log("Unfollow Response:", response);
+        return [response.followerCount, response.followeeCount];
+      } else {
+        console.error("Unfollow failed:", response);
+        throw new Error(
+          response.message || "An error occurred while unfollowing"
+        );
+      }
+    } catch (error) {
+      console.error("ServerFacade: Error in unfollow method", error);
+      throw error;
     }
   }
 

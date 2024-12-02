@@ -110,56 +110,74 @@ export class FollowService {
 
   public async follow(
     authToken: AuthToken,
+    currentUser: User,
     userToFollow: User
   ): Promise<[number, number]> {
+    console.log("FollowService.follow called with:", {
+      authToken,
+      currentUser,
+      userToFollow,
+    });
+
+    const followerAlias = currentUser.alias; // Extract alias of the current user
     const userToFollowDto = userToFollow.toDto();
 
-    console.log("FollowService: Sending follow request", {
-      method: "follow",
-      targetUser: userToFollowDto.alias,
-      payload: { token: authToken.token, userToFollowDto },
+    if (!followerAlias || !userToFollowDto.alias) {
+      throw new Error("Invalid followerAlias or userToFollowDto.alias");
+    }
+
+    console.log("Payload being sent to ServerFacade.follow:", {
+      token: authToken.token,
+      followerAlias,
+      userToFollowDto,
     });
 
     try {
       const result = await this.serverFacade.follow(
         authToken.token,
+        followerAlias,
         userToFollowDto
       );
       return result;
     } catch (error) {
-      console.error("FollowService: Error in follow method", {
-        method: "follow",
-        targetUser: userToFollowDto.alias,
-        error,
-      });
+      console.error("FollowService: Error in follow method", error);
       throw error;
     }
   }
 
   public async unfollow(
     authToken: AuthToken,
+    currentUser: User,
     userToUnfollow: User
   ): Promise<[number, number]> {
+    console.log("FollowService.unfollow called with:", {
+      authToken,
+      currentUser,
+      userToUnfollow,
+    });
+
+    const followerAlias = currentUser.alias; // Extract alias of the current user
     const userToUnfollowDto = userToUnfollow.toDto();
 
-    console.log("FollowService: Attempting to unfollow user", {
-      method: "unfollow",
-      targetUser: userToUnfollowDto.alias,
-      payload: { token: authToken.token, userToUnfollowDto },
+    if (!followerAlias || !userToUnfollowDto.alias) {
+      throw new Error("Invalid followerAlias or userToUnfollowDto.alias");
+    }
+
+    console.log("Payload being sent to ServerFacade.unfollow:", {
+      token: authToken.token,
+      followerAlias,
+      userToUnfollowDto,
     });
 
     try {
       const result = await this.serverFacade.unfollow(
         authToken.token,
+        followerAlias,
         userToUnfollowDto
       );
       return result;
     } catch (error) {
-      console.error("FollowService: Error in unfollow method", {
-        method: "unfollow",
-        targetUser: userToUnfollowDto.alias,
-        error,
-      });
+      console.error("FollowService: Error in unfollow method", error);
       throw error;
     }
   }

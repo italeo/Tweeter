@@ -74,22 +74,26 @@ export class UserInfoPresenter extends Presenter<UserInfoView> {
 
   public async followUserCustom(
     _authToken: AuthToken,
+    _currentUser: User,
     _displayedUser: User
   ): Promise<void> {
     console.log("followUserCustom called with:", {
       authToken: _authToken,
+      currentUser: _currentUser,
       displayedUser: _displayedUser,
     });
 
     await this.doFailureReportingOperation(async () => {
       this.view.displayInfoMessage(
-        `Adding ${_displayedUser!.name} to followers...`,
+        `Adding ${_displayedUser.name} to followers...`,
         0
       );
 
+      // Pass `_currentUser` and `_displayedUser` as User objects
       const [followersCount, followeesCount] = await this.followService.follow(
-        _authToken!,
-        _displayedUser!
+        _authToken,
+        _currentUser,
+        _displayedUser
       );
       console.log("Follow service response:", {
         followersCount,
@@ -110,21 +114,28 @@ export class UserInfoPresenter extends Presenter<UserInfoView> {
 
   public async unfollowUserCustom(
     _authToken: AuthToken,
+    _currentUser: User,
     _displayedUser: User
   ): Promise<void> {
     console.log("unfollowUserCustom called with:", {
       authToken: _authToken,
+      currentUser: _currentUser,
       displayedUser: _displayedUser,
     });
 
     await this.doFailureReportingOperation(async () => {
       this.view.displayInfoMessage(
-        `Removing ${_displayedUser!.name} from followers...`,
+        `Removing ${_displayedUser.name} from followers...`,
         0
       );
 
+      // Pass `_currentUser` and `_displayedUser` as User objects
       const [followersCount, followeesCount] =
-        await this.followService.unfollow(_authToken!, _displayedUser!);
+        await this.followService.unfollow(
+          _authToken,
+          _currentUser,
+          _displayedUser
+        );
       console.log("Unfollow service response:", {
         followersCount,
         followeesCount,

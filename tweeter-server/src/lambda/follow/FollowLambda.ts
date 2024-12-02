@@ -6,13 +6,12 @@ import { DynamoFollowDAO } from "../../database/dao/dynamodb/DynamoFollowDAO";
 export const handler = async (
   request: FollowRequest
 ): Promise<FollowResponse> => {
-  // Instantiate the DAOs
+  // Instantiate the DAO
   const followDAO = new DynamoFollowDAO();
-
-  // Inject the DAOs into the FollowService
   const followService = new FollowService(followDAO);
 
+  // Use the 'followerAlias' directly from the request
   return handleFollowAction(() =>
-    followService.follow(request.token, request.userToFollow)
+    followService.follow(request.followerAlias, request.userToFollow)
   );
 };

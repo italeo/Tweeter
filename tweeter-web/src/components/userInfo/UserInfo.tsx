@@ -51,7 +51,7 @@ const UserInfo = () => {
   ): Promise<void> => {
     event.preventDefault();
     console.log("Follow button clicked");
-    await presenter.followUserCustom(authToken!, displayedUser!);
+    await presenter.followUserCustom(authToken!, currentUser!, displayedUser!); // Pass currentUser
     console.log("AuthToken:", authToken);
     console.log("DisplayedUser:", displayedUser);
   };
@@ -60,7 +60,11 @@ const UserInfo = () => {
     event: React.MouseEvent
   ): Promise<void> => {
     event.preventDefault();
-    await presenter.unfollowUserCustom(authToken!, displayedUser!);
+    await presenter.unfollowUserCustom(
+      authToken!,
+      currentUser!,
+      displayedUser!
+    ); // Pass currentUser
   };
 
   return (
