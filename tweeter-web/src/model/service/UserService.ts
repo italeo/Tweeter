@@ -11,11 +11,21 @@ export class UserService {
   ): Promise<[User, AuthToken]> {
     const response = await this.serverFacade.login(alias, password);
 
-    if (!response || !response[0] || !response[1]) {
+    console.log("ServerFacade login response:", response); // Debugging log
+
+    // Validate the response tuple
+    if (!response || response.length !== 2 || !response[0] || !response[1]) {
       throw new Error("Login failed: Invalid response from server.");
     }
 
-    return response;
+    const [user, authToken] = response;
+
+    // Additional validations (optional)
+    if (!user.alias || !authToken.token) {
+      throw new Error("Login failed: User or authentication token is invalid.");
+    }
+
+    return [user, authToken];
   }
 
   public async register(

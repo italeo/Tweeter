@@ -29,16 +29,19 @@ export class AuthenticatePresenter extends Presenter<AuthView> {
 
   protected async doAuthenticateOperation(
     authOperation: () => Promise<[User, AuthToken]>,
-    operationDescription: String
+    operationDescription: string
   ) {
     this.setLoadingState(true);
     try {
       const [user, authToken] = await authOperation();
       this.authenticated(user, authToken);
     } catch (error) {
-      this.displayErrorMessage(
-        `Failed to ${operationDescription} because of exception: ${error}`
-      );
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : `Unable to ${operationDescription}. Please try again.`;
+
+      this.displayErrorMessage(errorMessage); // Use the error message directly
     } finally {
       this.setLoadingState(false);
     }

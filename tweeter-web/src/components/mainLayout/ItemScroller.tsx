@@ -54,6 +54,13 @@ const UserItemScroller = <T, U>(props: Props<T, U>) => {
       ]); // Log the combined array
     },
     displayErrorMessage: displayErrorMessage,
+    showEmptyState: () => {
+      setItems([]); // Clear items and handle empty state
+    },
+    hideLoading: () => {
+      // Optional: If you have specific UI for "loading", hide it here
+      console.log("Loading indicator should be hidden now.");
+    },
   };
 
   const [presenter] = useState(props.presenterGenerator(listener));

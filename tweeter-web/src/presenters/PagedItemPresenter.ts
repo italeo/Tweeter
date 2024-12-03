@@ -8,6 +8,8 @@ export const PAGE_SIZE = 10;
 
 export interface PagedItemView<T> extends View {
   addItems: (items: T[]) => void;
+  showEmptyState: () => void;
+  hideLoading: () => void;
 }
 export abstract class PagedItemPresenter<T, U> extends Presenter<
   PagedItemView<T>
@@ -54,13 +56,19 @@ export abstract class PagedItemPresenter<T, U> extends Presenter<
           userAlias
         );
 
-        this.hasMoreItems = hasMore;
+        this.hasMoreItems = hasMore; // Properly set hasMoreItems
 
         if (newItems.length > 0) {
-          this.lastItem = newItems[newItems.length - 1]; // Update to the last fetched item
+          this.lastItem = newItems[newItems.length - 1];
           this.view.addItems(newItems);
         }
+
+        // Handle empty state if no items and no more items
+        if (newItems.length === 0 && !hasMore) {
+          this.view.showEmptyState(); // Inform view of empty state
+        }
       }
+      this.view.hideLoading(); // Ensure the loading state is always cleared
     }, this.getItemDescription());
   }
 

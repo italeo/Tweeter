@@ -31,22 +31,22 @@ export class Presenter<V extends View> {
     console.log(`Starting operation: ${operationDescription}`);
 
     try {
-      // Execute the operation
       await operation();
       console.log(`Operation '${operationDescription}' completed successfully`);
     } catch (error) {
-      // Log the error and display it through the view
       console.error(
         `Operation '${operationDescription}' failed due to:`,
         error instanceof Error ? error.message : error
       );
 
-      // Inform the user about the failure
-      this.view.displayErrorMessage(
-        `Failed to ${operationDescription} because of exception: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`
-      );
+      // Directly use the backend's error message
+      const userFriendlyMessage =
+        error instanceof Error
+          ? error.message
+          : `Unable to ${operationDescription.toLowerCase()}. Please try again.`;
+
+      console.log(`User-friendly message to display: ${userFriendlyMessage}`);
+      this.view.displayErrorMessage(userFriendlyMessage);
     }
   }
 }
