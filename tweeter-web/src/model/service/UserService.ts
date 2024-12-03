@@ -45,6 +45,16 @@ export class UserService {
   }
 
   public async getUser(authToken: AuthToken, alias: string): Promise<User> {
+    // Clean the alias
+    alias = this.cleanAlias(alias);
+
+    // Validate the alias
+    if (!/^@[a-zA-Z0-9_]+$/.test(alias)) {
+      throw new Error(
+        "Invalid alias format: aliases must start with @ and contain no punctuation."
+      );
+    }
+
     const user = await this.serverFacade.getUser(authToken, alias);
 
     if (!user) {
@@ -56,5 +66,11 @@ export class UserService {
 
   public async logout(authToken: AuthToken): Promise<void> {
     await this.serverFacade.logout(authToken);
+  }
+
+  // Utility function to clean the alias
+  private cleanAlias(alias: string): string {
+    // Remove trailing punctuation (e.g., @bob, @bob.)
+    return alias.replace(/[^\w@]+$/, "");
   }
 }
