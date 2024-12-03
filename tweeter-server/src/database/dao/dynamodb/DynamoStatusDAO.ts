@@ -52,6 +52,7 @@ export class DynamoStatusDAO extends DynamoBaseDAO implements StatusDAO {
         ":alias": { S: userAlias },
       },
       Limit: limit,
+      ScanIndexForward: false, // Retrieve items in descending order by timestamp
       ExclusiveStartKey:
         lastKey && lastKey.alias && lastKey.timestamp
           ? {
