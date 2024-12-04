@@ -8,7 +8,8 @@ import {
   WriteRequest,
   BatchGetItemCommand,
 } from "@aws-sdk/client-dynamodb";
-import { User } from "tweeter-shared";
+import { User, UserDto } from "tweeter-shared";
+import { batchFetchUserDetails } from "./batchFetchUserDetails";
 
 export abstract class DynamoBaseDAO {
   protected readonly client: DynamoDBClient;
@@ -133,108 +134,9 @@ export abstract class DynamoBaseDAO {
   }
 
   // Fetch user details in bulk and cache them
-  protected async batchFetchUserDetails(
+  async batchFetchUserDetails(
     aliases: string[]
-  ): Promise<Map<string, User>> {
-    const formattedAliases = aliases; // Assume aliases include '@' if stored in DB
-    const uncachedAliases = formattedAliases.filter(
-      (alias) => !this.userCache.has(alias)
-    );
-    const resultMap = new Map<string, User>();
-
-    if (uncachedAliases.length > 0) {
-      console.log(`Batch fetching details for aliases: ${uncachedAliases}`);
-
-      const keys = uncachedAliases.map((alias) => ({
-        alias: { S: alias }, // Ensure key matches the table schema
-      }));
-
-      const params = { RequestItems: { Users: { Keys: keys } } };
-
-      console.log(
-        "batchFetchUserDetails Params:",
-        JSON.stringify(params, null, 2)
-      );
-
-      try {
-        const response = await this.client.send(
-          new BatchGetItemCommand(params)
-        );
-        const items = response.Responses?.Users || [];
-        console.log(
-          "batchFetchUserDetails Result:",
-          JSON.stringify(items, null, 2)
-        );
-
-        for (const item of items) {
-          const user = new User(
-            item.firstName?.S || "Unknown",
-            item.lastName?.S || "User",
-            item.alias?.S || "",
-            item.imageUrl?.S || "default_image_url",
-            item.passwordHash?.S || ""
-          );
-          this.userCache.set(user.alias, user);
-          resultMap.set(user.alias, user);
-        }
-
-        if (response.UnprocessedKeys?.Users?.Keys) {
-          console.warn(
-            "Unprocessed Keys:",
-            response.UnprocessedKeys.Users.Keys
-          );
-          let retryCount = 0;
-          const MAX_RETRIES = 3;
-
-          while (
-            response.UnprocessedKeys.Users.Keys &&
-            retryCount < MAX_RETRIES
-          ) {
-            retryCount++;
-            console.log(`Retrying unprocessed keys (Attempt ${retryCount})`);
-            await new Promise((resolve) =>
-              setTimeout(resolve, 1000 * Math.pow(2, retryCount))
-            );
-
-            const retryResponse = await this.client.send(
-              new BatchGetItemCommand({
-                RequestItems: response.UnprocessedKeys,
-              })
-            );
-            const retryItems = retryResponse.Responses?.Users || [];
-            console.log(
-              `Retry Result (Attempt ${retryCount}):`,
-              JSON.stringify(retryItems, null, 2)
-            );
-            for (const item of retryItems) {
-              const retryUser = new User(
-                item.firstName?.S || "Unknown",
-                item.lastName?.S || "User",
-                item.alias?.S || "",
-                item.imageUrl?.S || "default_image_url",
-                item.passwordHash?.S || ""
-              );
-              this.userCache.set(retryUser.alias, retryUser);
-              resultMap.set(retryUser.alias, retryUser);
-            }
-          }
-        }
-      } catch (error) {
-        console.error("Error batch fetching user details:", error);
-        throw new Error("Batch fetch operation failed.");
-      }
-    }
-
-    for (const alias of formattedAliases) {
-      if (this.userCache.has(alias)) {
-        resultMap.set(alias, this.userCache.get(alias)!);
-      }
-    }
-
-    console.log(
-      "Final User Map:",
-      JSON.stringify(Array.from(resultMap.entries()), null, 2)
-    );
-    return resultMap;
+  ): Promise<Map<string, UserDto>> {
+    return await batchFetchUserDetails(this.client, aliases);
   }
 }

@@ -198,7 +198,7 @@ export class DynamoFollowDAO extends DynamoBaseDAO implements FollowDAO {
         .map((alias) => {
           const user = userMap.get(alias);
           if (user) {
-            return user.toDto(); // Convert to UserDto
+            return user; // Convert to UserDto
           }
           return undefined; // Handle missing users
         })
@@ -248,7 +248,7 @@ export class DynamoFollowDAO extends DynamoBaseDAO implements FollowDAO {
         .map((alias) => {
           const user = userMap.get(alias);
           if (user) {
-            return user.toDto(); // Convert to UserDto
+            return user; // Convert to UserDto
           }
           return undefined; // Handle missing users
         })

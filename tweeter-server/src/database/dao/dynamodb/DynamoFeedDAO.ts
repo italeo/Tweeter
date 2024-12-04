@@ -4,14 +4,20 @@ import {
   QueryCommandInput,
 } from "@aws-sdk/client-dynamodb";
 import { FeedDAO } from "../interfaces/FeedDAO";
-import { Status, UserDto, StatusDto } from "tweeter-shared";
+import { Status } from "tweeter-shared";
 import { DynamoBaseDAO } from "./DynamoBaseDAO";
+import { SQSClient, SendMessageCommand } from "@aws-sdk/client-sqs";
+import { User } from "tweeter-shared"; // Assuming you have a User class to handle user details
 
 export class DynamoFeedDAO extends DynamoBaseDAO implements FeedDAO {
   private readonly tableName: string = "Feed";
+  private readonly sqsClient: SQSClient;
+  private readonly batchProcessingQueueUrl: string =
+    "https://sqs.us-west-2.amazonaws.com/506149017946/BatchProcessingQueue";
 
   public constructor() {
     super();
+    this.sqsClient = new SQSClient({});
   }
 
   // Add a status to the feed of all followers
@@ -20,41 +26,49 @@ export class DynamoFeedDAO extends DynamoBaseDAO implements FeedDAO {
     status: Status
   ): Promise<void> {
     if (followerAliases.length === 0) {
-      console.log("No followers to update feeds for. Skipping batch write.");
+      console.log("No followers to update feeds for. Skipping SQS message.");
       return;
     }
 
-    const writeRequests = followerAliases.map((alias) => {
-      const aliasWithoutPrefix = alias.startsWith("@")
-        ? alias.substring(1)
-        : alias;
-      return {
-        PutRequest: {
-          Item: {
-            alias: { S: aliasWithoutPrefix },
-            timestamp: { N: status.timestamp.toString() },
-            post: { S: status.post },
-            authorAlias: { S: status.user.alias },
-          },
-        },
-      };
-    });
-
-    const params = {
-      RequestItems: {
-        [this.tableName]: writeRequests,
-      },
-    };
-
     try {
-      await this.client.send(new BatchWriteItemCommand(params));
-      console.log(
-        `Status added to feeds for ${followerAliases.length} followers.`
-      );
+      // Step 1: Split followers into manageable batches (optional, based on SQS message size limits)
+      const batches = this.splitIntoBatches(followerAliases, 25); // Adjust batch size as needed
+
+      for (const batch of batches) {
+        // Step 2: Construct the message for SQS
+        const message = {
+          followers: batch,
+          status: {
+            authorAlias: status.user.alias,
+            timestamp: status.timestamp,
+            post: status.post,
+          },
+        };
+
+        const sqsParams = {
+          QueueUrl: this.batchProcessingQueueUrl,
+          MessageBody: JSON.stringify(message),
+        };
+
+        // Step 3: Send the message to the Batch Processing Queue
+        await this.sqsClient.send(new SendMessageCommand(sqsParams));
+        console.log(
+          `Batch of ${batch.length} followers sent to Batch Processing Queue.`
+        );
+      }
     } catch (error) {
-      console.error(`Error adding status to feeds:`, error);
+      console.error(`Error adding status to Batch Processing Queue:`, error);
       throw error;
     }
+  }
+
+  // Split array into batches of specified size
+  private splitIntoBatches(array: string[], batchSize: number): string[][] {
+    const result: string[][] = [];
+    for (let i = 0; i < array.length; i += batchSize) {
+      result.push(array.slice(i, i + batchSize));
+    }
+    return result;
   }
 
   // Remove a status from the feed of all followers
@@ -92,6 +106,7 @@ export class DynamoFeedDAO extends DynamoBaseDAO implements FeedDAO {
       throw error;
     }
   }
+
   // Get feed for a user
   async getFeedForUser(
     userAlias: string,
@@ -118,36 +133,32 @@ export class DynamoFeedDAO extends DynamoBaseDAO implements FeedDAO {
     };
 
     try {
-      // Log the query input parameters
       console.log("DynamoDB Query Input for Feed:", params);
-
-      console.log(`Fetching feed for user: ${userAlias}`);
       const data = await this.client.send(new QueryCommand(params));
-
-      // Log the raw data returned from DynamoDB
-      console.log("Raw DynamoDB Data for Feed:", data.Items);
 
       const feedItems = data.Items || [];
       const authorAliases = [
         ...new Set(feedItems.map((item) => item.authorAlias?.S)),
-      ].filter((alias): alias is string => !!alias); // Filter out undefined values
+      ].filter((alias): alias is string => !!alias);
 
-      // Log the unique author aliases retrieved
-      console.log("Unique Author Aliases:", authorAliases);
-
-      // Batch fetch user details
       const userMap = await this.batchFetchUserDetails(authorAliases);
-
-      // Log the fetched user details
-      console.log("Fetched User Details Map:", userMap);
 
       const statuses = feedItems
         .map((item) => {
-          const user = userMap.get(item.authorAlias?.S || "");
-          if (!user) {
-            console.error("User not found for alias:", item.authorAlias?.S);
+          const userDetails = userMap.get(item.authorAlias?.S || "");
+          if (!userDetails) {
+            console.error("User details not found:", item.authorAlias?.S);
             return null;
           }
+
+          // Map userDetails to User
+          const user = new User(
+            userDetails.firstName,
+            userDetails.lastName,
+            userDetails.alias,
+            userDetails.imageUrl,
+            ""
+          );
 
           return new Status(
             item.post?.S || "",
@@ -157,13 +168,7 @@ export class DynamoFeedDAO extends DynamoBaseDAO implements FeedDAO {
         })
         .filter((status): status is Status => status !== null);
 
-      const hasMore = !!data.LastEvaluatedKey;
-
-      // Log the final processed statuses and pagination information
-      console.log(`Processed Feed Items:`, statuses);
-      console.log(`Has More Items: ${hasMore}`);
-
-      return { statuses, hasMore };
+      return { statuses, hasMore: !!data.LastEvaluatedKey };
     } catch (error) {
       console.error(`Error retrieving feed for user ${userAlias}:`, error);
       throw error;

@@ -5,14 +5,22 @@ import {
   QueryCommandInput,
 } from "@aws-sdk/client-dynamodb";
 import { StatusDAO } from "../interfaces/StatusDAO";
-import { Status, User } from "tweeter-shared";
+import { Status } from "tweeter-shared";
 import { DynamoBaseDAO } from "./DynamoBaseDAO";
+import { SendMessageCommand, SQSClient } from "@aws-sdk/client-sqs";
+import { DynamoFollowDAO } from "./DynamoFollowDAO";
 
 export class DynamoStatusDAO extends DynamoBaseDAO implements StatusDAO {
   private readonly tableName: string = "Statuses";
+  private readonly sqsClient: SQSClient;
+  private readonly feedUpdateQueueUrl: string =
+    "https://sqs.us-west-2.amazonaws.com/506149017946/FeedUpdateQueue";
+  private readonly followDAO: DynamoFollowDAO;
 
   public constructor() {
     super();
+    this.sqsClient = new SQSClient({});
+    this.followDAO = new DynamoFollowDAO();
   }
 
   // Create a new status
@@ -27,8 +35,52 @@ export class DynamoStatusDAO extends DynamoBaseDAO implements StatusDAO {
     };
 
     try {
+      // Step 1: Write status to the Statuses table
       await this.client.send(new PutItemCommand(params));
       console.log(`Status created successfully for user ${status.user.alias}`);
+
+      // Step 2: Fetch all followers dynamically using DynamoFollowDAO
+      const followers = [];
+      let lastItem;
+
+      do {
+        const response = await this.followDAO.getFollowers(
+          status.user.alias,
+          100,
+          lastItem
+        );
+        followers.push(...response.followers.map((f) => f.alias));
+        lastItem = response.hasMore
+          ? response.followers[response.followers.length - 1]
+          : undefined;
+      } while (lastItem);
+
+      console.log(
+        `Fetched ${followers.length} followers for ${status.user.alias}.`
+      );
+
+      if (followers.length === 0) {
+        console.log("No followers found. Skipping SQS message.");
+        return;
+      }
+
+      // Step 3: Construct message for SQS
+      const message = {
+        statusId: status.timestamp,
+        authorAlias: status.user.alias,
+        post: status.post,
+        followers: followers, // Add fetched followers to the message
+        timestamp: status.timestamp,
+      };
+
+      const sqsParams = {
+        QueueUrl: this.feedUpdateQueueUrl,
+        MessageBody: JSON.stringify(message),
+      };
+
+      // Step 4: Send the message to the Feed Update Queue
+      await this.sqsClient.send(new SendMessageCommand(sqsParams));
+      console.log("Message sent to Feed Update Queue successfully.");
     } catch (error) {
       console.error(
         `Error creating status for user ${status.user.alias}:`,
