@@ -8,6 +8,7 @@ const dynamoDBClient = new DynamoDBClient({ region: "us-west-2" });
 
 const FEED_TABLE_NAME = "Feed";
 
+// Utility function to split an array into smaller batches
 function splitIntoBatches<T>(array: T[], batchSize: number): T[][] {
   const batches: T[][] = [];
   for (let i = 0; i < array.length; i += batchSize) {
@@ -49,37 +50,64 @@ export const handler = async (event: any) => {
         })
       );
 
-      // Split into batches of 25
+      // Split into batches of 25 (DynamoDB limit)
       const batches = splitIntoBatches(writeRequests, 25);
 
       for (const batch of batches) {
-        const params = {
-          RequestItems: {
-            [FEED_TABLE_NAME]: batch,
-          },
-        };
+        let retries = 0;
+        const maxRetries = 5; // Maximum number of retries
+        const delay = (retryCount: number) =>
+          new Promise((res) => setTimeout(res, Math.pow(2, retryCount) * 100)); // Exponential backoff delay
 
-        try {
-          const result = await dynamoDBClient.send(
-            new BatchWriteItemCommand(params)
-          );
-          console.log("Batch write result:", result);
-
-          if (
-            result.UnprocessedItems &&
-            result.UnprocessedItems[FEED_TABLE_NAME]
-          ) {
-            console.error(
-              "Some items were not processed. Retrying unprocessed items..."
-            );
-            // Retry logic for unprocessed items
-            const retryParams = {
-              RequestItems: result.UnprocessedItems,
+        while (retries < maxRetries) {
+          try {
+            const params = {
+              RequestItems: {
+                [FEED_TABLE_NAME]: batch,
+              },
             };
-            await dynamoDBClient.send(new BatchWriteItemCommand(retryParams));
+
+            const result = await dynamoDBClient.send(
+              new BatchWriteItemCommand(params)
+            );
+
+            console.log("Batch write result:", result);
+
+            // Handle unprocessed items
+            if (
+              result.UnprocessedItems &&
+              result.UnprocessedItems[FEED_TABLE_NAME]
+            ) {
+              console.warn(
+                "Some items were not processed. Retrying unprocessed items..."
+              );
+              // Replace the batch with unprocessed items for retry
+              batch.splice(
+                0,
+                batch.length,
+                ...result.UnprocessedItems[FEED_TABLE_NAME]
+              );
+              retries++;
+              await delay(retries); // Apply exponential backoff
+            } else {
+              break; // Exit retry loop if all items are processed
+            }
+          } catch (error) {
+            console.error(
+              `Error writing batch to DynamoDB. Attempt ${retries + 1}:`,
+              error
+            );
+            retries++;
+            await delay(retries); // Apply exponential backoff
           }
-        } catch (error) {
-          console.error("Error writing batch to DynamoDB:", error);
+        }
+
+        if (retries === maxRetries) {
+          console.error(
+            "Max retries reached. Unprocessed items:",
+            JSON.stringify(batch, null, 2)
+          );
+          // Optionally send failed batches to Dead Letter Queue (DLQ) for manual inspection
         }
       }
     } catch (error) {

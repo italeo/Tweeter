@@ -39,7 +39,7 @@ export class DynamoStatusDAO extends DynamoBaseDAO implements StatusDAO {
       await this.client.send(new PutItemCommand(params));
       console.log(`Status created successfully for user ${status.user.alias}`);
 
-      // Step 2: Fetch all followers dynamically using DynamoFollowDAO
+      // Step 2: Fetch followers for the user
       const followers = [];
       let lastItem;
 
@@ -64,13 +64,14 @@ export class DynamoStatusDAO extends DynamoBaseDAO implements StatusDAO {
         return;
       }
 
-      // Step 3: Construct message for SQS
+      // Step 3: Send message to FeedUpdateQueue
       const message = {
-        statusId: status.timestamp,
-        authorAlias: status.user.alias,
-        post: status.post,
-        followers: followers, // Add fetched followers to the message
-        timestamp: status.timestamp,
+        followers,
+        status: {
+          authorAlias: status.user.alias,
+          timestamp: status.timestamp,
+          post: status.post,
+        },
       };
 
       const sqsParams = {
@@ -78,7 +79,6 @@ export class DynamoStatusDAO extends DynamoBaseDAO implements StatusDAO {
         MessageBody: JSON.stringify(message),
       };
 
-      // Step 4: Send the message to the Feed Update Queue
       await this.sqsClient.send(new SendMessageCommand(sqsParams));
       console.log("Message sent to Feed Update Queue successfully.");
     } catch (error) {

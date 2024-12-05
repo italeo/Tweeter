@@ -20,7 +20,7 @@ export class DynamoFeedDAO extends DynamoBaseDAO implements FeedDAO {
     this.sqsClient = new SQSClient({});
   }
 
-  // Add a status to the feed of all followers
+  // Add a status to the feed of all followers using SQS
   async addStatusToFeed(
     followerAliases: string[],
     status: Status
@@ -31,11 +31,10 @@ export class DynamoFeedDAO extends DynamoBaseDAO implements FeedDAO {
     }
 
     try {
-      // Step 1: Split followers into manageable batches (optional, based on SQS message size limits)
-      const batches = this.splitIntoBatches(followerAliases, 25); // Adjust batch size as needed
+      // Split followers into manageable batches (to handle SQS limits)
+      const batches = this.splitIntoBatches(followerAliases, 25);
 
       for (const batch of batches) {
-        // Step 2: Construct the message for SQS
         const message = {
           followers: batch,
           status: {
@@ -50,7 +49,6 @@ export class DynamoFeedDAO extends DynamoBaseDAO implements FeedDAO {
           MessageBody: JSON.stringify(message),
         };
 
-        // Step 3: Send the message to the Batch Processing Queue
         await this.sqsClient.send(new SendMessageCommand(sqsParams));
         console.log(
           `Batch of ${batch.length} followers sent to Batch Processing Queue.`

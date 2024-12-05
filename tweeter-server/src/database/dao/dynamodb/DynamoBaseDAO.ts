@@ -133,10 +133,9 @@ export abstract class DynamoBaseDAO {
     }
   }
 
-  // Fetch user details in bulk and cache them
   async batchFetchUserDetails(
     aliases: string[]
   ): Promise<Map<string, UserDto>> {
-    return await batchFetchUserDetails(this.client, aliases);
+    return await batchFetchUserDetails(this.client, aliases, false);
   }
 }
