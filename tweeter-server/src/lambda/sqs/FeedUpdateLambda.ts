@@ -8,7 +8,7 @@ const dynamoDBClient = new DynamoDBClient({ region: "us-west-2" });
 
 const FEED_TABLE_NAME = "Feed";
 
-// Utility function to split an array into smaller batches
+// Utility function to split an array into smaller DynamoDB batches
 function splitIntoBatches<T>(array: T[], batchSize: number): T[][] {
   const batches: T[][] = [];
   for (let i = 0; i < array.length; i += batchSize) {
@@ -33,7 +33,7 @@ export const handler = async (event: any) => {
       }
 
       console.log(
-        `Updating feeds for ${followers.length} followers for status: ${status.authorAlias}`
+        `Processing feed updates for ${followers.length} followers for status: ${status.authorAlias}`
       );
 
       // Prepare batch write requests for DynamoDB
@@ -50,14 +50,14 @@ export const handler = async (event: any) => {
         })
       );
 
-      // Split into batches of 25 (DynamoDB limit)
-      const batches = splitIntoBatches(writeRequests, 25);
+      // Split into smaller DynamoDB batches (25 items max per batch)
+      const dynamoBatches = splitIntoBatches(writeRequests, 25);
 
-      for (const batch of batches) {
+      for (const batch of dynamoBatches) {
         let retries = 0;
         const maxRetries = 5; // Maximum number of retries
         const delay = (retryCount: number) =>
-          new Promise((res) => setTimeout(res, Math.pow(2, retryCount) * 100)); // Exponential backoff delay
+          new Promise((res) => setTimeout(res, Math.pow(2, retryCount) * 100));
 
         while (retries < maxRetries) {
           try {
@@ -81,7 +81,6 @@ export const handler = async (event: any) => {
               console.warn(
                 "Some items were not processed. Retrying unprocessed items..."
               );
-              // Replace the batch with unprocessed items for retry
               batch.splice(
                 0,
                 batch.length,
@@ -98,7 +97,7 @@ export const handler = async (event: any) => {
               error
             );
             retries++;
-            await delay(retries); // Apply exponential backoff
+            await delay(retries);
           }
         }
 
@@ -107,12 +106,11 @@ export const handler = async (event: any) => {
             "Max retries reached. Unprocessed items:",
             JSON.stringify(batch, null, 2)
           );
-          // Optionally send failed batches to Dead Letter Queue (DLQ) for manual inspection
+          // Optionally send failed batches to a Dead Letter Queue (DLQ)
         }
       }
     } catch (error) {
       console.error("Error processing message:", error);
-      // Optionally handle failed messages (e.g., send to Dead Letter Queue)
     }
   }
 
